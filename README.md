@@ -146,24 +146,39 @@ set interval in milisec for each retry backoff default:1000
 #### `handler(value: string) :Job`
 set job handler id
 #### `exec() :Promise<Job>`
-save the job to redis
+save the job to redis if the schedule changed the job will reschedule
 
 #### `lock(interval:number) :Promise<Job>`
 lock job for given interval
 this method is called automatically when the handler is called
 ```js
 
-    await queue.create("test", {someValue: "value"})
+await queue.create("test", {someValue: "value"})
 
-    queue.handle("test",async (job)=>{
-        await job.lock(60 *1000);
-        //do something
-    })
+queue.handle("test",async (job)=>{
+    await job.lock(60 *1000);
+    //do something
+})
 
-   ```
+```
 
 #### `run(waitForResults:boolean) :Promise<Job> | Promise<any>`
-save the job to redis and run it immediately if waitForResults then promise returned with job result
+save the job to redis and run it immediately
+if waitForResults then promise returned with job result
+```js
+
+queue.handle("test",async (job)=>{
+    return "some value"
+})
+
+let job =  await queue.create("test", {someValue: "value"})
+        .run()
+
+let result =  await queue.create("test", {someValue: "value"})
+        .run(true)
+
+ consloe.log(result) //some value
+```
 
 #### `cancel() :Promise<void>`
 cancel the job and delete from redis
