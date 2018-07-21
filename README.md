@@ -173,7 +173,7 @@ queue.handle("test",async (job)=>{
 
 let job =  await queue.create("test", {someValue: "value"}).run()
 
-let result =  await queue.create("test2", {someValue: "value"}).run(true)
+let result =  await queue.create("test", {someValue: "value"}).run(true)
 
  consloe.log(result) //some value
 ```
