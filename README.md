@@ -208,7 +208,7 @@ start pulling jobs from the queue
 stop pulling jobs from the queue
 
 #### `run(jobId: string,waitForResult:boolean): Promise<this | any>`
-run job by id return the instance of job result when waitForResult
+run job by id return the instance or job result when waitForResult true
 
 #### `getJob(id: string): Promise<Job>`
 get job instance by id
