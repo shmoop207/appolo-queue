@@ -32,7 +32,7 @@ create queue instance with the following `options`:
 
 ## Create Job
 
-### create(jobId, [params])
+#### `create(jobId, [params]):Job`
 creates new job instance `params` optional object pasted to the handler
 in the end call `exec` to save the job the task will be run `Date.now()`
 each job must have uniq id
@@ -44,7 +44,7 @@ each job must have uniq id
    await queue.create("test", {param: "value"})
          .exec();
 ```
-### delay(time)
+#### `delay(time):Job`
 create delayed job where time one of the following
 the job will run only once
 - interval in milisec
@@ -60,7 +60,7 @@ the job will run only once
         .exec();
 ```
 
-### schedule(time)
+#### `schedule(time):Job`
 create scheduled job where time one of the following
 the job will run every interval
 - interval in milisec
@@ -86,7 +86,7 @@ Each job has it's own handler
 The handler will be called with the job instance and return promise with the job result
 
 
-## handle(jobId,handler,[options])
+#### `handle(jobId,handler,[options]):Queue`
 adds handler to queue by job id
 `options`:
 - `lockTime`: interval in milisec lock the job while the handler is running
@@ -131,22 +131,24 @@ await queue.create("someId2", {someValue: "value"})
     .exec();
 ```
 
-### lockTime(lockTime: number):Job
+#### `lockTime(lockTime: number):Job`
 change job lock time default: 60000
 
-### repeat(value: number):Job
+#### `repeat(value: number):Job`
 set the max number of time job will run the default fro schedule in unlimited and for delayed is 1
 
-### retry (value: number):Job
+#### `retry (value: number):Job`
 set the number of retries on job fail default :10 when the number is reached will reschedule the job
 
-###  backoff(value: number) :Job
+#### `backoff(value: number) :Job`
 set interval in milisec for each retry backoff default:1000
 
-###  exec() :Promise<Job>
+#### `handler(value: string) :Job`
+set job handler id
+#### `exec() :Promise<Job>`
 save the job to redis
 
-###  run(waitForResults:boolean) :Promise<Job> | Promise<any>
+#### `run(waitForResults:boolean) :Promise<Job> | Promise<any>`
 save the job to redis and run it immediately if waitForResults then promise returned with job result
 ```js
 try{
@@ -158,18 +160,18 @@ try{
     //job result error
 }
 ```
-###  cancel() :Promise<void>
+#### `cancel() :Promise<void>`
 cancel the job and delete from redis
 
-#### get id():string
+#### `get id():string`
 return job id
-#### get  params():any
+#### `get  params():any`
 return job params
-#### get nextRun(): number
+#### `get nextRun(): number`
 return job next run unix milisec
-#### get interval(): number
+#### `get interval(): number`
 return job next run interval milisec
-#### get options()
+#### `get options()`
 return job options
 
 ### Job Events
@@ -188,33 +190,33 @@ let job = await queue.create("someId2", {someValue: "value"})
     .exec();
 ```
 
-#### on(eventName,callback, [scope])
+#### `on(eventName,callback, [scope]):Job`
 register event listener
 
-#### once(eventName,callback, [scope])
+#### `once(eventName,callback, [scope]):Job`
 register event listener, will be removed after one call
 
-#### un(eventName,callback, [scope])
+#### `un(eventName,callback, [scope]):Job`
 remove event listener
 
 
 ## Queue
 
-### start()
+#### `start()`
 start pulling jobs from the queue
-### stop()
+#### `stop()`
 stop pulling jobs from the queue
 
-### run(jobId: string,waitForResult:boolean): Promise<this | any>
+#### `run(jobId: string,waitForResult:boolean): Promise<this | any>`
 run job by id return the instance of job result when waitForResult
 
-### getJob(id: string): Promise<Job>
+#### `getJob(id: string): Promise<Job>`
 get job instance by id
 
-### getJob(): Promise<Job[]>
+#### `getJob(): Promise<Job[]>`
 get all jobs in the queue
 
-### hasJob(id: string): Promise<boolean>
+#### `hasJob(id: string): Promise<boolean>`
 return true if job id exist in the queue
 
 ### Queue Events
@@ -238,19 +240,19 @@ queue.on(Events.Error,(e)=>console.log(e))
 
 ```
 
-#### on(eventName,callback, [scope])
+#### `on(eventName,callback, [scope]):Queue`
 register event listener
 
-#### once(eventName,callback, [scope])
+#### `once(eventName,callback, [scope]):Queue`
 register event listener, will be removed after one call
 
-#### un(eventName,callback, [scope])
+#### `un(eventName,callback, [scope]):Queue`
 remove event listener
 
-### purge()
+#### `purge()`
 delete all jobs in the queue
 
-### reset()
+#### `reset()`
 stop job pulling and purge the queue
 
 ## License

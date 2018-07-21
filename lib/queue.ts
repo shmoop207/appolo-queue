@@ -36,8 +36,9 @@ export class Queue {
     }
 
 
-    public handle(id: string, handler: (job: Job) => any, options?: IHandlerOptions): void {
+    public handle(id: string, handler: (job: Job) => any, options?: IHandlerOptions): this {
         this._jobsManager.setJobHandler(id, handler, options);
+        return this
     }
 
 
