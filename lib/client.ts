@@ -7,6 +7,7 @@ import * as Scripto from "redis-scripto";
 import {IOptions} from "./IOptions";
 import {IJobParams} from "./IJob";
 import {EventDispatcher} from "appolo-event-dispatcher";
+import {Events} from "./events";
 
 
 export class Client extends EventDispatcher {
@@ -63,12 +64,13 @@ export class Client extends EventDispatcher {
     private _onMessage(channel: string, message: string) {
         let data: { eventName: string, job: IJobParams } = JSON.parse(message);
 
-        this.fireEvent(data.eventName, data.job);
+        this.fireEvent(`${Events.ClientMessage}`, data);
+        this.fireEvent(`${Events.ClientMessage}:${data.job.id}`, data);
 
     }
 
-    public publish(eventName: string, data: IJobParams) {
-        this._client.publish(this._options.queueName, JSON.stringify({eventName, job: data}));
+    public publish(eventName: string, job: IJobParams, result: any = null) {
+        this._client.publish(this._options.queueName, JSON.stringify({eventName, job, result}));
     }
 
     public async getJobsByDate(date: number, limit: number, lock: number): Promise<IJobParams[]> {
@@ -88,7 +90,7 @@ export class Client extends EventDispatcher {
     }
 
     public async getJob(id: string): Promise<IJobParams> {
-        let data = await Q.fromCallback(c => this._client.hget(this._getQueueSet, id, c));
+        let data = await Q.fromCallback(c => this._client.hget(this._getQueueHash, id, c));
 
         if (!data) {
             return null;
@@ -128,6 +130,13 @@ export class Client extends EventDispatcher {
             Q.fromCallback(c => this._client.del(this._getQueueSet, c))
         ]);
 
+    }
+
+    public async quit() {
+        await Q.all([
+            Q.fromCallback(c => this._client.quit(c)),
+            Q.fromCallback(c => this._sub.quit(c))
+        ]);
     }
 
 }

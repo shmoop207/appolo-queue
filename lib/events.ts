@@ -5,5 +5,6 @@ export enum Events {
     JobSuccess = "jobSuccess",
     JobFail = "jobFail",
     JobComplete = "jobComplete",
+    ClientMessage = "clientMessage",
 }
     

@@ -1,9 +1,9 @@
-import {IJobOptions, IOptions, ScheduleType} from "./IOptions";
+import {IHandlerOptions, IOptions} from "./IOptions";
 import {Client} from "./client";
 import {Job} from "./job";
 import {QueueDefaults} from "./defaults";
 import {JobsManager} from "./jobsManager";
-import {EventDispatcher} from "appolo-event-dispatcher";
+import {Events} from "./events";
 import _ = require("lodash");
 
 export class Queue {
@@ -27,7 +27,7 @@ export class Queue {
     public async initialize(): Promise<void> {
         await this._client.connect();
 
-        this._jobsManager.start();
+        this._jobsManager.initialize();
 
     }
 
@@ -36,55 +36,22 @@ export class Queue {
     }
 
 
-    public handle(id: string, handler: (job: Job) => any) {
-        this._jobsManager.setJobHandler(id, handler);
+    public handle(id: string, handler: (job: Job) => any, options?: IHandlerOptions): void {
+        this._jobsManager.setJobHandler(id, handler, options);
     }
 
 
-    public runEvery(schedule: ScheduleType, id: string, params?: { [index: string]: any }, options: IJobOptions = {}): Promise<Job> {
-        return this._addJob(id, params, _.extend({}, options, {schedule: schedule}));
+    public create(id: string, params?: { [index: string]: any }): Job {
+        return this._jobsManager.createJob({id, params});
     }
 
-    public async runNow(jobId: string, params?: { [index: string]: any }, options: IJobOptions = {}): Promise<Job> {
-
-        return this.runOnce(0, jobId, params, options)
-    }
-
-    public async runOnce(time:ScheduleType, jobId: string, params?: { [index: string]: any }, options: IJobOptions = {}): Promise<Job> {
-
-        return this._addJob(jobId, params, _.extend({}, options, {schedule: time, repeat: 1}));
-    }
-
-    private async _addJob(jobId: string, params?: { [index: string]: any }, options: IJobOptions = {}) {
-
-        if (!options.override) {
-            let hasJob = await this.hasJob(jobId);
-
-            if (hasJob) {
-                return this.getJob(jobId);
-            }
-        }
-
-        let job = this.createJob(jobId, params, _.extend({}, options, options));
-
-        await job.save();
-
-        return job;
-
-    }
-
-    public async run(jobId: string): Promise<void> {
+    public async run(jobId: string,waitForResult: boolean = false): Promise<this | any> {
 
         let job = await this.getJob(jobId);
 
-        await job.run();
+        return job.run(waitForResult);
     }
 
-
-    public createJob(id: string, params?: { [index: string]: any }, options: IJobOptions = {}): Job {
-
-        return this._jobsManager.createJob({id, params, options});
-    }
 
     public async getJob(id: string): Promise<Job> {
         return this._jobsManager.getJob(id)
@@ -98,16 +65,20 @@ export class Queue {
         return this._client.hasJob(id)
     }
 
-    public on(event: string, fn: (...args: any[]) => any, scope?: any): EventDispatcher {
-        return this._jobsManager.on(event, fn, scope);
+    public on(event: Events.JobComplete | Events.JobSuccess | Events.JobFail | Events.JobStart  | Events.Error | Events.Ready, fn: (...args: any[]) => any, scope?: any): this {
+        this._jobsManager.on(event, fn, scope);
+        return this;
     }
 
-    public un(event: string, fn: (...args: any[]) => any, scope?: any): EventDispatcher {
-        return this._jobsManager.un(event, fn, scope);
+    public once(event: Events.JobComplete | Events.JobSuccess | Events.JobFail | Events.JobStart | Events.JobStart | Events.Error | Events.Ready, fn: (...args: any[]) => any, scope?: any): this {
+        this._jobsManager.once(event, fn, scope);
+        return this;
     }
 
-    public removeAllListeners(): EventDispatcher {
-        return this._jobsManager.removeAllListeners();
+    public un(event: Events.JobComplete | Events.JobSuccess | Events.JobFail | Events.JobStart | Events.JobStart | Events.Error | Events.Ready, fn: (...args: any[]) => any, scope?: any): this {
+        this._jobsManager.un(event, fn, scope);
+
+        return this;
     }
 
     public async purge() {
@@ -115,8 +86,11 @@ export class Queue {
     }
 
     public async reset() {
+        this._jobsManager.reset();
         await this.purge();
+        await this._client.quit();
         this.stop();
+
     }
 
 

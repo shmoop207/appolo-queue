@@ -19,7 +19,7 @@
     "npm": ">= 5.3.x"
   },
   "main": "./index.js",
-  "version": "6.0.0",
+  "version": "6.0.2",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -28,11 +28,10 @@
   "readme": "",
   "readmeFilename": "README.md",
   "dependencies": {
-    "appolo-event-dispatcher": "^6.0.1",
+    "appolo-event-dispatcher": "^6.0.2",
     "bluebird": "^3.5.1",
     "cron-parser": "^2.5.0",
     "date.js": "^0.3.3",
-    "human-interval": "^0.1.6",
     "lodash": "^4.17.10",
     "redis": "^2.8.0",
     "redis-scripto": "^0.1.3"

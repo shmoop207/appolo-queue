@@ -3,19 +3,22 @@ export interface IOptions {
     queueName?: string
     checkInterval?: number
     maxConcurrency?: number
-    lockLifetime?: number
+    lockTime?: number
 
 }
 
 export type ScheduleType = string | number | Date;
 
 export interface IJobOptions {
-    lockLifetime?: number
+    lockTime?: number
     schedule?: ScheduleType,
-    //delay?: number
+    backoff?: number
     retry?: number
     repeat?: number
     override?: boolean
-    handler?:string
+    handler?: string
+}
 
+export interface IHandlerOptions {
+    lockTime?: number
 }

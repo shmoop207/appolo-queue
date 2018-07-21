@@ -1,15 +1,22 @@
-import {IOptions} from "./IOptions";
-import {IJobData} from "./IJob";
+import {IHandlerOptions, IJobOptions, IOptions} from "./IOptions";
 
-export  let QueueDefaults = <Partial<IOptions>>{
+export let QueueDefaults = <Partial<IOptions>>{
     checkInterval: 1000,
-    lockLifetime: 1000 * 60,
+    lockTime: 1000 * 60,
     queueName: 'appolo-queue',
     maxConcurrency: 1
 
+
 };
 
-export let JobDefaults = <Partial<IJobData>>{
+export let JobDefaults = <Partial<IJobOptions>>{
     retry: 10,
-    repeat: 0
+    repeat: 1,
+    schedule: 0,
+    lockTime: 60 * 1000,
+    backoff: 1000,
+};
+
+export let HandlerDefaults = <Partial<IHandlerOptions>>{
+    lockTime: 0
 };

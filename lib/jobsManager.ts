@@ -1,9 +1,11 @@
 import {IJobParams} from "./IJob";
 import {Job} from "./job";
 import {Client} from "./client";
-import {IOptions} from "./IOptions";
+import {IHandlerOptions, IOptions} from "./IOptions";
 import {EventDispatcher} from "appolo-event-dispatcher";
 import {Events} from "./events";
+import {Util} from "./util";
+import {HandlerDefaults} from "./defaults";
 import Q = require("bluebird");
 import _ = require("lodash");
 import Timer = NodeJS.Timer;
@@ -11,22 +13,20 @@ import Timer = NodeJS.Timer;
 export class JobsManager extends EventDispatcher {
 
     private _interval: Timer;
-    private _handlers: Map<string, (job: Job) => Promise<void>>;
+    private _handlers: Map<string, { options: IHandlerOptions, handler: (job: Job) => Promise<any> }>;
     private _isRunning: boolean;
 
 
     constructor(private _options: IOptions, private _client: Client) {
         super();
         this._handlers = new Map();
-
-        this._bindEvents();
     }
 
-    private _bindEvents() {
-        this._client.on(Events.JobFail, this._fireEvent, this);
-        this._client.on(Events.JobStart, this._fireEvent, this);
-        this._client.on(Events.JobComplete, this._fireEvent, this);
-        this._client.on(Events.JobFail, this._fireEvent, this);
+    public initialize() {
+
+        this._client.on(Events.ClientMessage, this._onClientMessage, this);
+
+        this.start();
     }
 
     public start(): void {
@@ -47,8 +47,7 @@ export class JobsManager extends EventDispatcher {
     private async _checkForJobs() {
 
         try {
-
-            let jobsParams = await this._client.getJobsByDate(Date.now(), this._options.maxConcurrency, this._options.lockLifetime);
+            let jobsParams = await this._client.getJobsByDate(Date.now(), this._options.maxConcurrency, this._options.lockTime);
 
             if (!jobsParams.length) {
                 return;
@@ -57,7 +56,7 @@ export class JobsManager extends EventDispatcher {
             await Q.map(jobsParams, params => this._handleJob(params), {concurrency: this._options.maxConcurrency})
 
         } catch (e) {
-            this.fireEvent(Events.Error);
+            this.fireEvent(Events.Error, e);
         } finally {
 
             if (this._isRunning) {
@@ -81,31 +80,72 @@ export class JobsManager extends EventDispatcher {
 
             this._client.publish(Events.JobStart, job.toJobParam());
 
-            await job.lock();
+            if (handler.options.lockTime || job.options.lockTime) {
+                await job.lock(handler.options.lockTime || job.options.lockTime);
+            }
 
-            await handler(job);
+            let result = await handler.handler(job);
 
-            await job.ack();
+            await this.ack(job);
 
-            this._client.publish(Events.JobSuccess, job.toJobParam());
+            this._client.publish(Events.JobSuccess, job.toJobParam(), result);
 
         } catch (e) {
 
-            await job.nack();
+            await this.nack(job);
 
-            this._client.publish(Events.JobFail, job.toJobParam());
+            this._client.publish(Events.JobFail, job.toJobParam(), e ? e.toString() : "job error");
         }
 
         this._client.publish(Events.JobComplete, job.toJobParam());
     }
 
-    private _fireEvent(name: string, job: Job) {
-        this.fireEvent(name, job);
-        this.fireEvent(`${name}:${job.id}`, job);
+    public async ack(job: Job): Promise<void> {
+        job.data.lastRun = Date.now();
+        job.options.repeat && (job.data.runCount++);
+        job.data.errorCount = 0;
+
+        if (job.options.repeat && job.data.runCount >= job.options.repeat) {
+
+            await job.cancel();
+
+        } else {
+
+            job.nextRun = Util.calcNextRun(job.options.schedule);
+
+            await job.exec();
+        }
     }
 
-    public setJobHandler(id: string, handler: (job: Job) => Promise<void>) {
-        this._handlers.set(id, handler);
+    public async nack(job: Job): Promise<void> {
+
+        try {
+            job.data.errorCount++;
+
+            if (job.data.errorCount <= job.options.retry) {
+                job.nextRun = Date.now() + (job.data.errorCount * (job.options.backoff || 1000))
+            } else {
+                job.nextRun = Util.calcNextRun(job.options.schedule);
+            }
+
+            await job.exec();
+
+        } catch (e) {
+            this.fireEvent(Events.Error, e);
+        }
+    }
+
+    private _onClientMessage(data: { eventName: string, job: IJobParams, result: any }) {
+        let job = this.createJob(data.job);
+        this.fireEvent(data.eventName, job, data.result);
+    }
+
+    public setJobHandler(id: string, handler: (job: Job) => Promise<any>, options: IHandlerOptions) {
+
+        options = _.defaults({}, options, HandlerDefaults);
+
+        this._handlers.set(id, {handler, options})
+
     }
 
     public async getJob(id: string): Promise<Job> {
@@ -131,7 +171,8 @@ export class JobsManager extends EventDispatcher {
         return _.map(jobParams, item => this.createJob(item));
     }
 
-    purge() {
+    public reset() {
+        this._client.un(Events.ClientMessage, this._onClientMessage, this);
 
     }
 }
