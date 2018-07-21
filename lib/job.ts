@@ -92,23 +92,23 @@ export class Job extends EventDispatcher {
         this.fireEvent(data.eventName, this, data.result);
     }
 
-    public on(event: Events.JobComplete | Events.JobSuccess | Events.JobFail  | Events.JobStart, fn: (...args: any[]) => any, scope?: any) {
+    public on(event: Events.JobComplete | Events.JobSuccess | Events.JobFail | Events.JobStart, fn: (...args: any[]) => any, scope?: any) {
         return super.on(event, fn, scope)
     }
 
-    public once(event: Events.JobComplete | Events.JobSuccess | Events.JobFail  | Events.JobStart, fn: (...args: any[]) => any, scope?: any) {
+    public once(event: Events.JobComplete | Events.JobSuccess | Events.JobFail | Events.JobStart, fn: (...args: any[]) => any, scope?: any) {
         return super.once(event, fn, scope)
     }
 
-    public un(event: Events.JobComplete | Events.JobSuccess | Events.JobFail  | Events.JobStart, fn: (...args: any[]) => any, scope?: any) {
+    public un(event: Events.JobComplete | Events.JobSuccess | Events.JobFail | Events.JobStart, fn: (...args: any[]) => any, scope?: any) {
         return super.un(event, fn, scope)
     }
 
-    public get id():string {
+    public get id(): string {
         return this._id;
     }
 
-    public get params():{[index:string]:any} {
+    public get params(): { [index: string]: any } {
         return this._params;
     }
 
@@ -117,8 +117,9 @@ export class Job extends EventDispatcher {
         return this._data.nextRun;
     }
 
-    public set nextRun(value: number) {
+    public setNextRun(value: number): this {
         this._data.nextRun = value;
+        return this;
     }
 
     public interval(): number {

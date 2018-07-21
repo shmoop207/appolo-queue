@@ -111,7 +111,7 @@ export class JobsManager extends EventDispatcher {
 
         } else {
 
-            job.nextRun = Util.calcNextRun(job.options.schedule);
+            job.setNextRun(Util.calcNextRun(job.options.schedule));
 
             await job.exec();
         }
@@ -123,9 +123,9 @@ export class JobsManager extends EventDispatcher {
             job.data.errorCount++;
 
             if (job.data.errorCount <= job.options.retry) {
-                job.nextRun = Date.now() + (job.data.errorCount * (job.options.backoff || 1000))
+                job.setNextRun(Date.now() + (job.data.errorCount * (job.options.backoff || 1000)))
             } else {
-                job.nextRun = Util.calcNextRun(job.options.schedule);
+                job.setNextRun(Util.calcNextRun(job.options.schedule));
             }
 
             await job.exec();

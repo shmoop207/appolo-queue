@@ -127,7 +127,7 @@ await queue.create("someId2", {someValue: "value"})
     .lockTime(10*60*1000) // 10 min
     .repeat(2)
     .retry(3)
-    .backoff()
+    .backoff(2000)
     .exec();
 ```
 
@@ -148,18 +148,23 @@ set job handler id
 #### `exec() :Promise<Job>`
 save the job to redis
 
+#### `lock(interval:number) :Promise<Job>`
+lock job for given interval
+this method is called automatically when the handler is called
+```js
+
+    await queue.create("test", {someValue: "value"})
+
+    queue.handle("test",async (job)=>{
+        await job.lock(60 *1000);
+        //do something
+    })
+
+   ```
+
 #### `run(waitForResults:boolean) :Promise<Job> | Promise<any>`
 save the job to redis and run it immediately if waitForResults then promise returned with job result
-```js
-try{
 
-   let returl =  await queue.create("someId2", {someValue: "value"})
-    .run(true);
-
-}catch(e){
-    //job result error
-}
-```
 #### `cancel() :Promise<void>`
 cancel the job and delete from redis
 
@@ -201,6 +206,9 @@ remove event listener
 
 
 ## Queue
+
+### `initialize():Promise<void>`
+initialize the queue and start pulling interval a promise returned when every thing is ready.
 
 #### `start()`
 start pulling jobs from the queue
