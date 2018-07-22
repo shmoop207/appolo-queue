@@ -1,39 +1,65 @@
 import chai = require("chai");
 import sinon = require("sinon");
+import redis = require("redis");
+import redisMock = require("redis-mock");
 import sinonChai = require("sinon-chai");
 import Q = require("bluebird");
-import {Queue} from "../index"
+import  mock = require('mock-require');
 import {SinonFakeTimers} from "sinon";
 import {Job} from "../lib/job";
 import {Events} from "../lib/events";
+import {LuaMock} from "./luaMock";
+
+mock('redis-scripto', LuaMock);
+import {Queue} from "../index"
+
 
 chai.use(sinonChai);
 
 let should = chai.should();
 
-const redis = "redis://redistogo:e630f8e0a37be146c941d01bd91fbab7@cod.redistogo.com:11661" //redis go free redis
-
 
 describe("Queue", () => {
     let clock: SinonFakeTimers, queue: Queue;
+
+
+    before(async () => {
+
+
+        sinon.stub(redis, "createClient").callsFake(() => {
+            return redisMock.createClient()
+        })
+
+    })
+
+
     beforeEach(async () => {
-        queue = new Queue({redis: redis, checkInterval: 10});
+
+
+        queue = new Queue({redis: "", checkInterval: 10});
 
         await queue.initialize();
 
         await queue.purge();
+
+
     });
 
     afterEach(async () => {
-        await queue.reset();
+        try {
+            await queue.reset();
+        } catch (e) {
+            debugger
+        }
+
+
     });
 
 
     it("Should run once delayed job ", async () => {
 
 
-        let spy = sinon.spy(async () => {
-        });
+        let spy = sinon.spy();
 
         queue.handle("test", spy);
 
@@ -45,7 +71,7 @@ describe("Queue", () => {
 
         spy.should.be.not.called;
 
-        await Q.delay(1000);
+        await Q.delay(200);
 
         spy.should.be.calledOnce;
 
@@ -64,7 +90,7 @@ describe("Queue", () => {
         await queue.create("test", {param1: "testParam"})
             .exec();
 
-        await Q.delay(1000);
+        await Q.delay(100);
 
         spy.should.be.calledOnce;
 
@@ -89,7 +115,7 @@ describe("Queue", () => {
 
         spy.should.be.not.called;
 
-        await Q.delay(2500);
+        await Q.delay(2000);
 
         spy.should.be.calledTwice;
 
@@ -126,16 +152,11 @@ describe("Queue", () => {
     it("Should run schedule job using cron syntax ", async () => {
 
 
-        let spy = sinon.spy(async () => {
-        });
+        let spy = sinon.spy();
 
         queue.handle("test", spy);
 
         await queue.create("test", {param1: "testParam"}).schedule("* * * * * *").exec();
-
-        await Q.delay(300);
-
-        spy.should.be.not.called;
 
         await Q.delay(1000);
 
@@ -177,7 +198,7 @@ describe("Queue", () => {
 
         queue.handle("test", spy);
 
-        await queue.create("test", {param1: "testParam"}).schedule(new Date(Date.now() + 1000)).exec();
+        await queue.create("test", {param1: "testParam"}).delay(new Date(Date.now() + 1000)).exec();
 
         await Q.delay(300);
 
@@ -205,7 +226,6 @@ describe("Queue", () => {
         let job = await queue.create("test", {param1: "testParam"}).schedule("1 second from now").exec();
 
         queue.on(Events.JobSuccess, spy);
-        //queue.on("jobSuccess:test", spy2);
 
         job.on(Events.JobSuccess, spy2);
 
@@ -235,7 +255,6 @@ describe("Queue", () => {
         let job = await queue.create("test", {param1: "testParam"}).schedule("1 second from now").exec();
 
         queue.on(Events.JobSuccess, spy);
-        //queue.on("jobSuccess:test", spy2);
 
         job.on(Events.JobSuccess, spy2);
 
@@ -267,12 +286,11 @@ describe("Queue", () => {
         let job = await queue.create("test", {param1: "testParam"}).schedule("1 second from now").exec();
 
         queue.on(Events.JobFail, spy);
-        //queue.on("jobSuccess:test", spy2);
 
         job.on(Events.JobFail, spy2);
 
 
-        await Q.delay(1500);
+        await Q.delay(1100);
 
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
@@ -292,7 +310,7 @@ describe("Queue", () => {
         await queue.reset();
 
 
-        queue = new Queue({redis: redis, checkInterval: 10, maxConcurrency: 2});
+        queue = new Queue({redis: "", checkInterval: 10, maxConcurrency: 2});
 
         await queue.initialize();
 
@@ -406,7 +424,7 @@ describe("Queue", () => {
 
         await queue.create("test", {param1: "testParam"}).delay("1 second from now").exec();
 
-        await Q.delay(2000);
+        await Q.delay(1500);
 
 
         spy.should.be.calledOnce;

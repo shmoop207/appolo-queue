@@ -39,6 +39,8 @@ export class Client extends EventDispatcher {
 
             this._sub.subscribe(this._options.queueName);
 
+            let scripto = this.scripto = new Scripto(this._client);
+
             this._sub.on("message", this._onMessage.bind(this));
 
             this._client.on('connect', () => {
@@ -49,8 +51,6 @@ export class Client extends EventDispatcher {
                 reject(error)
             });
 
-            let scripto = this.scripto = new Scripto(this._client);
-
             let script = await Q.props({
                 "get_jobs": Q.fromCallback(c => fs.readFile(path.resolve(__dirname, "lua/get_jobs.lua"), {encoding: "utf8"}, c)),
                 "set_job": Q.fromCallback(c => fs.readFile(path.resolve(__dirname, "lua/set_job.lua"), {encoding: "utf8"}, c)),
@@ -58,6 +58,8 @@ export class Client extends EventDispatcher {
             });
 
             scripto.load(script as any);
+
+
         })
     }
 
@@ -133,10 +135,9 @@ export class Client extends EventDispatcher {
     }
 
     public async quit() {
-        await Q.all([
-            Q.fromCallback(c => this._client.quit(c)),
-            Q.fromCallback(c => this._sub.quit(c))
-        ]);
+        this._client.quit();
+        this._sub.quit();
+
     }
 
 }
