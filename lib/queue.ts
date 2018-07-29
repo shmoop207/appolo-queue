@@ -46,7 +46,7 @@ export class Queue {
         return this._jobsManager.createJob({id, params});
     }
 
-    public async run(jobId: string,waitForResult: boolean = false): Promise<this | any> {
+    public async run(jobId: string, waitForResult: boolean = false): Promise<this | any> {
 
         let job = await this.getJob(jobId);
 
@@ -66,7 +66,7 @@ export class Queue {
         return this._client.hasJob(id)
     }
 
-    public on(event: Events.JobComplete | Events.JobSuccess | Events.JobFail | Events.JobStart  | Events.Error | Events.Ready, fn: (...args: any[]) => any, scope?: any): this {
+    public on(event: Events.JobComplete | Events.JobSuccess | Events.JobFail | Events.JobStart | Events.Error | Events.Ready, fn: (...args: any[]) => any, scope?: any): this {
         this._jobsManager.on(event, fn, scope);
         return this;
     }
@@ -80,6 +80,14 @@ export class Queue {
         this._jobsManager.un(event, fn, scope);
 
         return this;
+    }
+
+    public async delete(jobId: string): Promise<void> {
+        let job = await this.getJob(jobId)
+
+        if (job) {
+            await job.cancel();
+        }
     }
 
     public async purge() {

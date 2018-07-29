@@ -19,10 +19,10 @@
     "npm": ">= 5.3.x"
   },
   "scripts": {
-    "test":"mocha test --timeout 5000 --exit"
+    "test": "mocha test --timeout 5000 --exit"
   },
   "main": "./index.js",
-  "version": "6.0.5",
+  "version": "6.0.6",
   "license": "MIT",
   "repository": {
     "type": "git",
