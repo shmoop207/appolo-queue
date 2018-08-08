@@ -1,9 +1,10 @@
-import {IHandlerOptions, IOptions} from "./IOptions";
+import {IHandlerOptions, IOptions, ScheduleType} from "./IOptions";
 import {Client} from "./client";
 import {Job} from "./job";
 import {QueueDefaults} from "./defaults";
 import {JobsManager} from "./jobsManager";
 import {Events} from "./events";
+import {Util} from "./util";
 import _ = require("lodash");
 
 export class Queue {
@@ -102,5 +103,12 @@ export class Queue {
 
     }
 
+    public calcNextRun(schedule: ScheduleType): number {
+        return Queue.calcNextRun(schedule)
+    }
+
+    public static calcNextRun(schedule: ScheduleType): number {
+        return Util.calcNextRun(schedule);
+    }
 
 }
