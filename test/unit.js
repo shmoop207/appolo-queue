@@ -7,10 +7,12 @@ const redisMock = require("redis-mock");
 const sinonChai = require("sinon-chai");
 const Q = require("bluebird");
 const mock = require("mock-require");
+const moment = require("moment");
 const events_1 = require("../lib/events");
 const luaMock_1 = require("./luaMock");
-mock('redis-scripto', luaMock_1.LuaMock);
 const index_1 = require("../index");
+const util_1 = require("../lib/util");
+mock('redis-scripto', luaMock_1.LuaMock);
 chai.use(sinonChai);
 let should = chai.should();
 describe("Queue", () => {
@@ -30,7 +32,6 @@ describe("Queue", () => {
             await queue.reset();
         }
         catch (e) {
-            debugger;
         }
     });
     it("Should run once delayed job ", async () => {
@@ -242,6 +243,11 @@ describe("Queue", () => {
         spy.getCall(0).args[0].params.param1.should.be.eq("testParam");
         let job = await queue.getJob("test");
         should.not.exist(job);
+    });
+    it("Should calc next run with utc ", async () => {
+        let time = util_1.Util.calcNextRun("0 0 0 * * *");
+        let date = moment.utc().add(1, "day").startOf("day").valueOf();
+        time.should.be.eq(date);
     });
     it("Should run with wait for result ", async () => {
         queue.handle("test", () => "working");

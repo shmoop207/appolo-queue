@@ -5,13 +5,15 @@ import redisMock = require("redis-mock");
 import sinonChai = require("sinon-chai");
 import Q = require("bluebird");
 import  mock = require('mock-require');
+import  moment = require('moment');
 import {SinonFakeTimers} from "sinon";
 import {Job} from "../lib/job";
 import {Events} from "../lib/events";
 import {LuaMock} from "./luaMock";
+import {Queue} from "../index"
+import {Util} from "../lib/util";
 
 mock('redis-scripto', LuaMock);
-import {Queue} from "../index"
 
 
 chai.use(sinonChai);
@@ -49,7 +51,7 @@ describe("Queue", () => {
         try {
             await queue.reset();
         } catch (e) {
-            debugger
+
         }
 
 
@@ -57,7 +59,6 @@ describe("Queue", () => {
 
 
     it("Should run once delayed job ", async () => {
-
 
         let spy = sinon.spy();
 
@@ -438,6 +439,14 @@ describe("Queue", () => {
 
 
     });
+
+    it("Should calc next run with utc ", async () => {
+        let time = Util.calcNextRun("0 0 0 * * *");
+
+        let date = moment.utc().add(1, "day").startOf("day").valueOf();
+
+        time.should.be.eq(date)
+    })
 
     it("Should run with wait for result ", async () => {
 

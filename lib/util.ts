@@ -16,7 +16,7 @@ export class Util {
         }
 
         try {
-            let iterator = cronParser.parseExpression(schedule);
+            let iterator = cronParser.parseExpression(schedule, {utc: true});
             return iterator.next().getTime();
         } catch (e) {
 
@@ -53,7 +53,7 @@ export class Util {
             let time = date(schedule);
 
             if (time) {
-                return   time.valueOf() - Date.now();
+                return time.valueOf() - Date.now();
             }
 
             throw new Error(`invalid schedule ${schedule}`)
