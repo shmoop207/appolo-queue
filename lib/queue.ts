@@ -32,6 +32,10 @@ export class Queue {
 
     }
 
+    public start() {
+        this._jobsManager.start();
+    }
+
     public stop() {
         this._jobsManager.stop();
     }
@@ -84,7 +88,7 @@ export class Queue {
     }
 
     public async delete(jobId: string): Promise<void> {
-        let job = await this.getJob(jobId)
+        let job = await this.getJob(jobId);
 
         if (job) {
             await job.cancel();

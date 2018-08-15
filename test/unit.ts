@@ -1,19 +1,21 @@
+import  mock = require('mock-require');
+import {LuaMock} from "./luaMock";
+
+mock('redis-scripto', LuaMock);
 import chai = require("chai");
 import sinon = require("sinon");
 import redis = require("redis");
 import redisMock = require("redis-mock");
 import sinonChai = require("sinon-chai");
 import Q = require("bluebird");
-import  mock = require('mock-require');
 import  moment = require('moment');
 import {SinonFakeTimers} from "sinon";
 import {Job} from "../lib/job";
 import {Events} from "../lib/events";
-import {LuaMock} from "./luaMock";
 import {Queue} from "../index"
 import {Util} from "../lib/util";
 
-mock('redis-scripto', LuaMock);
+
 
 
 chai.use(sinonChai);
@@ -453,6 +455,22 @@ describe("Queue", () => {
         queue.handle("test", () => "working");
 
         let data = await queue.create("test", {param1: "testParam"})
+            .run(true);
+
+        data.should.be.eq("working")
+
+    });
+
+    it("Should run existing task", async () => {
+
+        queue.handle("test", () => "working");
+
+        await queue.create("test")
+            .schedule(1000000)
+            .exec();
+
+        let data = await queue.create("test")
+            .schedule(1000000)
             .run(true);
 
         data.should.be.eq("working")

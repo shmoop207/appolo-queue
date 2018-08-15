@@ -1,18 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const mock = require("mock-require");
+const luaMock_1 = require("./luaMock");
+mock('redis-scripto', luaMock_1.LuaMock);
 const chai = require("chai");
 const sinon = require("sinon");
 const redis = require("redis");
 const redisMock = require("redis-mock");
 const sinonChai = require("sinon-chai");
 const Q = require("bluebird");
-const mock = require("mock-require");
 const moment = require("moment");
 const events_1 = require("../lib/events");
-const luaMock_1 = require("./luaMock");
 const index_1 = require("../index");
 const util_1 = require("../lib/util");
-mock('redis-scripto', luaMock_1.LuaMock);
 chai.use(sinonChai);
 let should = chai.should();
 describe("Queue", () => {
@@ -252,6 +252,16 @@ describe("Queue", () => {
     it("Should run with wait for result ", async () => {
         queue.handle("test", () => "working");
         let data = await queue.create("test", { param1: "testParam" })
+            .run(true);
+        data.should.be.eq("working");
+    });
+    it("Should run existing task", async () => {
+        queue.handle("test", () => "working");
+        await queue.create("test")
+            .schedule(1000000)
+            .exec();
+        let data = await queue.create("test")
+            .schedule(1000000)
             .run(true);
         data.should.be.eq("working");
     });

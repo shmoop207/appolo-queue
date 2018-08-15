@@ -15,6 +15,7 @@ export class Job extends EventDispatcher {
     private _data: IJobData;
     private _client: Client;
     private _isNew: boolean;
+    private _override: boolean;
 
 
     constructor(id: string, options: IJobOptions, client: Client, params?: { [index: string]: any }, data?: IJobData) {
@@ -27,6 +28,7 @@ export class Job extends EventDispatcher {
         this._params = params || {};
         this._data = data || {lastRun: 0, runCount: 0, errorCount: 0, nextRun: Date.now()};
         this._client = client;
+        this._override = false;
 
 
         this._bindEvents()
@@ -117,7 +119,13 @@ export class Job extends EventDispatcher {
         return this._data.nextRun;
     }
 
+    public override(): this {
+        this._override = true;
+        return this;
+    }
+
     public setNextRun(value: number): this {
+        this._override = true;
         this._data.nextRun = value;
         return this;
     }
@@ -137,9 +145,9 @@ export class Job extends EventDispatcher {
     public async lock(time?: number): Promise<this> {
         time = time || this._options.lockTime;
 
-        this._data.nextRun = Date.now() + time;
+        this.setNextRun(Date.now() + time);
 
-        await this.exec();
+        await this.save();
 
         return this;
     }
@@ -150,17 +158,17 @@ export class Job extends EventDispatcher {
             return this._runWithResult();
         }
 
-        this._data.nextRun = Date.now();
+        this.setNextRun(Date.now());
 
-        await this.exec();
+        await this.save();
 
         return this;
     }
 
     private _runWithResult(): Promise<any> {
         return new Promise(async (resolve, reject) => {
-            this.once(Events.JobSuccess, (job: IJobParams, result) => resolve(result))
-            this.once(Events.JobFail, (job: IJobParams, result) => reject(result))
+            this.once(Events.JobSuccess, (job: IJobParams, result) => resolve(result));
+            this.once(Events.JobFail, (job: IJobParams, result) => reject(result));
             await this.run();
         })
     }
@@ -176,13 +184,20 @@ export class Job extends EventDispatcher {
 
         await this._checkNextTime();
 
+        await this.save();
+
+        return this;
+    }
+
+    public async save(): Promise<this> {
+
         await this._client.setJob(this.toJobParam(), this._data.nextRun);
 
         return this;
     }
 
     private async _checkNextTime() {
-        if (this._isNew) {
+        if (this._isNew && !this._override) {
             let dbJob = await  this._client.getJob(this.id);
 
             if (dbJob && dbJob.options.schedule == this._options.schedule) {
