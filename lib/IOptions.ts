@@ -4,6 +4,7 @@ export interface IOptions {
     checkInterval?: number
     maxConcurrency?: number
     lockTime?: number
+    autoStart?: boolean;
 
 }
 

@@ -20,7 +20,9 @@ export class Queue {
 
         this._client = new Client(this._options);
 
+
         this._jobsManager = new JobsManager(this._options, this._client);
+
 
         this._jobsManager.fireEvent("ready");
     }
@@ -29,6 +31,10 @@ export class Queue {
         await this._client.connect();
 
         this._jobsManager.initialize();
+
+        if (this._options.autoStart) {
+            this.start();
+        }
 
     }
 

@@ -25,8 +25,6 @@ export class JobsManager extends EventDispatcher {
     public initialize() {
 
         this._client.on(Events.ClientMessage, this._onClientMessage, this);
-
-        this.start();
     }
 
     public start(): void {
