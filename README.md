@@ -1,4 +1,7 @@
 # Appolo Queue
+[![Build Status](https://travis-ci.org/shmoop207/appolo-queue.svg?branch=master)](https://travis-ci.org/shmoop207/appolo-queue) [![Dependencies status](https://david-dm.org/shmoop207/appolo-queue.svg)](https://david-dm.org/shmoop207/appolo-queue) [![NPM version](https://badge.fury.io/js/appolo-queue.svg)](https://badge.fury.io/js/appolo-queue)  [![npm Downloads](https://img.shields.io/npm/dm/appolo-queue.svg?style=flat)](https://www.npmjs.com/package/appolo-queue)
+[![Known Vulnerabilities](https://snyk.io/test/github/shmoop207/appolo-queue/badge.svg)](https://snyk.io/test/github/shmoop207/appolo-queue)
+
 Distributed  job queue build with redis and typescript
 
 ## Features
