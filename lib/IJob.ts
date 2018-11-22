@@ -1,4 +1,5 @@
 import {IJobOptions} from "./IOptions";
+import {Job} from "./job";
 
 export interface IJobParams {
     id: string,
@@ -13,3 +14,5 @@ export interface IJobData {
     errorCount:number;
     nextRun:number
 }
+
+export type JobHandler = (job: Job) => Promise<any>

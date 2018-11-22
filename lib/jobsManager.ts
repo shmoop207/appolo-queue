@@ -95,6 +95,8 @@ export class JobsManager extends EventDispatcher {
             this._client.publish(Events.JobFail, job.toJobParam(), e ? e.toString() : "job error");
         }
 
+        job.destroy();
+
         this._client.publish(Events.JobComplete, job.toJobParam());
     }
 
@@ -158,7 +160,7 @@ export class JobsManager extends EventDispatcher {
     }
 
     public createJob(jobParams: IJobParams) {
-        let job = new Job(jobParams.id, jobParams.options, this._client, jobParams.params, jobParams.data);
+        let job = new Job(jobParams.id, jobParams.options, this._client, this, jobParams.params, jobParams.data);
 
         return job;
     }

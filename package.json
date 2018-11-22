@@ -22,7 +22,7 @@
     "test": "mocha test --timeout 5000 --exit"
   },
   "main": "./index.js",
-  "version": "6.0.11",
+  "version": "6.0.12",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -31,7 +31,7 @@
   "readme": "",
   "readmeFilename": "README.md",
   "dependencies": {
-    "appolo-event-dispatcher": "^6.0.2",
+    "appolo-event-dispatcher": "^6.0.6",
     "bluebird": "^3.5.1",
     "cron-parser": "^2.5.0",
     "date.js": "^0.3.3",

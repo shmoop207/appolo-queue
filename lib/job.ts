@@ -1,10 +1,11 @@
-import {IJobOptions, ScheduleType} from "./IOptions";
+import {IHandlerOptions, IJobOptions, ScheduleType} from "./IOptions";
 import {Util} from "./util";
-import {IJobData, IJobParams} from "./IJob";
+import {IJobData, IJobParams, JobHandler} from "./IJob";
 import {Client} from "./client";
 import {JobDefaults} from "./defaults";
 import {Events} from "./events";
 import {EventDispatcher} from "appolo-event-dispatcher/index";
+import {JobsManager} from "./jobsManager";
 import _ = require("lodash");
 
 export class Job extends EventDispatcher {
@@ -14,11 +15,13 @@ export class Job extends EventDispatcher {
     private _params: { [index: string]: any } = {};
     private _data: IJobData;
     private _client: Client;
+    private _jobManager: JobsManager;
     private _isNew: boolean;
     private _override: boolean;
+    private _isBindEvents: boolean;
 
 
-    constructor(id: string, options: IJobOptions, client: Client, params?: { [index: string]: any }, data?: IJobData) {
+    constructor(id: string, options: IJobOptions, client: Client, jobManager: JobsManager, params?: { [index: string]: any }, data?: IJobData) {
 
         super();
 
@@ -28,10 +31,9 @@ export class Job extends EventDispatcher {
         this._params = params || {};
         this._data = data || {lastRun: 0, runCount: 0, errorCount: 0, nextRun: Date.now()};
         this._client = client;
+        this._jobManager = jobManager;
         this._override = false;
-
-
-        this._bindEvents()
+        this._isBindEvents = false;
 
     }
 
@@ -50,8 +52,14 @@ export class Job extends EventDispatcher {
         return this;
     }
 
-    public handler(value: string): this {
-        this._options.handler = value;
+    public handler(value: JobHandler | string, options?: IHandlerOptions): this {
+
+        if (_.isFunction(value)) {
+            this._jobManager.setJobHandler(this.id, value as JobHandler, options)
+        } else {
+            this._options.handler = value;
+        }
+
         return this;
     }
 
@@ -86,7 +94,11 @@ export class Job extends EventDispatcher {
     }
 
     private _bindEvents() {
-        this._client.on(`${Events.ClientMessage}:${this.id}`, this._onClientMessage, this);
+        if (!this._isBindEvents) {
+            this._client.on(`${Events.ClientMessage}:${this.id}`, this._onClientMessage, this);
+            this._isBindEvents = true;
+        }
+
     }
 
     private _onClientMessage(data: { eventName: string, job: IJobParams, result: any }) {
@@ -95,10 +107,12 @@ export class Job extends EventDispatcher {
     }
 
     public on(event: Events.JobComplete | Events.JobSuccess | Events.JobFail | Events.JobStart, fn: (...args: any[]) => any, scope?: any) {
+        this._bindEvents();
         return super.on(event, fn, scope)
     }
 
     public once(event: Events.JobComplete | Events.JobSuccess | Events.JobFail | Events.JobStart, fn: (...args: any[]) => any, scope?: any) {
+        this._bindEvents();
         return super.once(event, fn, scope)
     }
 
@@ -180,6 +194,7 @@ export class Job extends EventDispatcher {
 
     }
 
+
     public async exec(): Promise<this> {
 
         await this._checkNextTime();
@@ -198,7 +213,7 @@ export class Job extends EventDispatcher {
 
     private async _checkNextTime() {
         if (this._isNew && !this._override) {
-            let dbJob = await  this._client.getJob(this.id);
+            let dbJob = await this._client.getJob(this.id);
 
             if (dbJob && dbJob.options.schedule == this._options.schedule) {
                 this._data.nextRun = dbJob.data.nextRun
@@ -217,6 +232,20 @@ export class Job extends EventDispatcher {
             options: this._options,
             data: this._data,
         }
+    }
+
+    public destroy() {
+
+
+        if(this._isBindEvents){
+            this._client.removeListenersByScope(this);
+        }
+
+
+        this.removeAllListeners();
+        this._client = null;
+        this._jobManager = null;
+
     }
 
 
