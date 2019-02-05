@@ -6,6 +6,7 @@ import {EventDispatcher} from "appolo-event-dispatcher";
 import {Events} from "./events";
 import {Util} from "./util";
 import {HandlerDefaults} from "./defaults";
+import {setInterval} from "timers";
 import Q = require("bluebird");
 import _ = require("lodash");
 import Timer = NodeJS.Timer;
@@ -16,6 +17,7 @@ export class JobsManager extends EventDispatcher {
     private _handlers: Map<string, { options: IHandlerOptions, handler: (job: Job) => Promise<any> }>;
     private _isRunning: boolean;
 
+    private _currentJobsCount = 0;
 
     constructor(private _options: IOptions, private _client: Client) {
         super();
@@ -33,37 +35,42 @@ export class JobsManager extends EventDispatcher {
     }
 
     private _setInterval() {
-        clearTimeout(this._interval);
-        this._interval = setTimeout(() => this._checkForJobs(), this._options.checkInterval)
+        clearInterval(this._interval);
+        this._interval = setInterval(() => this._checkForJobs(), this._options.checkInterval)
     }
 
     public stop(): void {
-        clearTimeout(this._interval);
+        clearInterval(this._interval);
         this._isRunning = false;
     }
 
     private async _checkForJobs() {
 
+        let maxJobs = this._options.maxConcurrency - this._currentJobsCount;
+
+        if (maxJobs <= 0) {
+            return;
+        }
+
         try {
-            let jobsParams = await this._client.getJobsByDate(Date.now(), this._options.maxConcurrency, this._options.lockTime);
+            let jobsParams = await this._client.getJobsByDate(Date.now(), maxJobs, this._options.lockTime);
 
             if (!jobsParams.length) {
                 return;
             }
 
-            await Q.map(jobsParams, params => this._handleJob(params), {concurrency: this._options.maxConcurrency})
+            await Q.map(jobsParams, params => this._handleJob(params), {concurrency: maxJobs})
 
         } catch (e) {
             this.fireEvent(Events.Error, e);
         } finally {
 
-            if (this._isRunning) {
-                this._setInterval();
-            }
         }
     }
 
     private async _handleJob(params: IJobParams) {
+
+        this._currentJobsCount++;
 
         let job = this.createJob(params);
 
@@ -93,6 +100,8 @@ export class JobsManager extends EventDispatcher {
             await this.nack(job);
 
             this._client.publish(Events.JobFail, job.toJobParam(), e ? e.toString() : "job error");
+        } finally {
+            this._currentJobsCount--;
         }
 
         job.destroy();
