@@ -1,7 +1,4 @@
-import  mock = require('mock-require');
-import {LuaMock} from "./luaMock";
 
-mock('redis-scripto', LuaMock);
 import chai = require("chai");
 import sinon = require("sinon");
 import redis = require("redis");
@@ -27,20 +24,15 @@ describe("Queue", () => {
     let clock: SinonFakeTimers, queue: Queue;
 
 
-    before(async () => {
-
-
-        sinon.stub(redis, "createClient").callsFake(() => {
-            return redisMock.createClient()
-        })
-
-    })
+    if (!process.env.REDIS) {
+        throw new Error(`please define process.env.REDIS`)
+    }
 
 
     beforeEach(async () => {
 
 
-        queue = new Queue({redis: "", checkInterval: 10});
+        queue = new Queue({redis: process.env.REDIS, checkInterval: 10});
 
         await queue.initialize();
 
@@ -53,7 +45,7 @@ describe("Queue", () => {
         try {
             await queue.reset();
         } catch (e) {
-
+            console.error(e)
         }
 
 
@@ -93,7 +85,7 @@ describe("Queue", () => {
         await queue.create("test", {param1: "testParam"})
             .exec();
 
-        await Q.delay(100);
+        await Q.delay(500);
 
         spy.should.be.calledOnce;
 
@@ -118,7 +110,7 @@ describe("Queue", () => {
 
         spy.should.be.not.called;
 
-        await Q.delay(2000);
+        await Q.delay(3000);
 
         spy.should.be.calledTwice;
 
@@ -293,7 +285,7 @@ describe("Queue", () => {
         job.on(Events.JobFail, spy2);
 
 
-        await Q.delay(1100);
+        await Q.delay(1500);
 
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
@@ -313,7 +305,7 @@ describe("Queue", () => {
         await queue.reset();
 
 
-        queue = new Queue({redis: "", checkInterval: 10, maxConcurrency: 2});
+        queue = new Queue({redis: process.env.REDIS, checkInterval: 10, maxConcurrency: 2});
 
         await queue.initialize();
 
