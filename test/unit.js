@@ -217,7 +217,7 @@ describe("Queue", () => {
         let spy = sinon.spy();
         await queue.create("test", { param1: "testParam" }).schedule("1 second from now").handler(spy).exec();
         await queue.create("test2", { param1: "testParam2" }).schedule("1 second from now").handler(spy).exec();
-        await Q.delay(1300);
+        await Q.delay(1500);
         spy.should.be.calledTwice;
         spy.getCall(0).args[0].id.should.be.eq("test");
         spy.getCall(0).args[0].params.param1.should.be.eq("testParam");

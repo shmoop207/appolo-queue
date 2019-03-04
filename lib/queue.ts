@@ -106,10 +106,11 @@ export class Queue {
     }
 
     public async reset() {
+        this.stop();
         this._jobsManager.reset();
         await this.purge();
         await this._client.quit();
-        this.stop();
+
 
     }
 

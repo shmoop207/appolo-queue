@@ -394,7 +394,7 @@ describe("Queue", () => {
         await queue.create("test", {param1: "testParam"}).schedule("1 second from now").handler(spy).exec();
         await queue.create("test2", {param1: "testParam2"}).schedule("1 second from now").handler(spy).exec();
 
-        await Q.delay(1300);
+        await Q.delay(1500);
 
         spy.should.be.calledTwice;
         spy.getCall(0).args[0].id.should.be.eq("test");
@@ -497,13 +497,13 @@ describe("Queue", () => {
         queue.handle("test", () => "working");
 
         let job = queue.create("test", {param1: "testParam"})
-            .schedule("every 10 minutes")
+            .schedule("every 10 minutes");
 
 
-        job.interval().should.be.eq(600000)
+        job.interval().should.be.eq(600000);
 
         job = queue.create("test", {param1: "testParam"})
-            .schedule("0 */10 * * * *")
+            .schedule("0 */10 * * * *");
 
 
         job.interval().should.be.eq(600000)

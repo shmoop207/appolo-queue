@@ -22,7 +22,7 @@
     "test": "mocha test --timeout 10000 --exit"
   },
   "main": "./index.js",
-  "version": "6.0.13",
+  "version": "7.0.0",
   "license": "MIT",
   "repository": {
     "type": "git",

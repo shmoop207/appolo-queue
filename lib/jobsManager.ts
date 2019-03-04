@@ -46,6 +46,10 @@ export class JobsManager extends EventDispatcher {
 
     private async _checkForJobs() {
 
+        if(!this._isRunning){
+            return;
+        }
+
         let maxJobs = this._options.maxConcurrency - this._currentJobsCount;
 
         if (maxJobs <= 0) {
@@ -69,6 +73,9 @@ export class JobsManager extends EventDispatcher {
     }
 
     private async _handleJob(params: IJobParams) {
+        if(!this._isRunning){
+            return;
+        }
 
         this._currentJobsCount++;
 

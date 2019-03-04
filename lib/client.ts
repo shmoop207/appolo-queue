@@ -14,6 +14,7 @@ export class Client extends EventDispatcher {
 
     private _client: Redis.Redis;
     private _sub: Redis.Redis;
+    private _isDestroyed = false;
 
     constructor(private _options: IOptions) {
         super();
@@ -35,9 +36,12 @@ export class Client extends EventDispatcher {
         this._client = new Redis(this._options.redis, params);
         this._sub = new Redis(this._options.redis, params);
 
+        await Promise.all([this._client.connect(), this._sub.connect()]);
+
         this._sub.subscribe(this._options.queueName);
 
         this._sub.on("message", this._onMessage.bind(this));
+
 
         let fsAsync = util.promisify(fs.readFile);
 
@@ -52,6 +56,9 @@ export class Client extends EventDispatcher {
     }
 
     private _onMessage(channel: string, message: string) {
+        if (this._isDestroyed) {
+            return
+        }
         let data: { eventName: string, job: IJobParams } = JSON.parse(message);
 
         this.fireEvent(`${Events.ClientMessage}`, data);
@@ -60,6 +67,10 @@ export class Client extends EventDispatcher {
     }
 
     public publish(eventName: string, job: IJobParams, result: any = null) {
+        if (this._isDestroyed) {
+            return
+        }
+
         this._client.publish(this._options.queueName, JSON.stringify({eventName, job, result})).catch();
     }
 
@@ -123,7 +134,11 @@ export class Client extends EventDispatcher {
     }
 
     public async quit() {
-        await Q.all([this._client.quit(), this._sub.quit()]);
+        this.removeAllListeners();
+        this._isDestroyed = true;
+        this._sub.unsubscribe(this._options.queueName);
+
+        await Q.all([this._client.disconnect(), this._sub.disconnect()]);
 
     }
 
