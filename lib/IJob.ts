@@ -10,9 +10,10 @@ export interface IJobParams {
 
 export interface IJobData {
     lastRun: number;
+    status: "success" | "error"
     runCount: number;
-    errorCount:number;
-    nextRun:number
+    errorCount: number;
+    nextRun: number
 }
 
 export type JobHandler = (job: Job) => Promise<any>

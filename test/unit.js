@@ -160,11 +160,11 @@ describe("Queue", () => {
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
         spy.getCall(0).args[0].params.param1.should.be.eq("testParam");
-        spy.getCall(0).args[1].should.be.eq("Error: not working");
+        spy.getCall(0).args[1].toString().should.include("Error: not working");
         spy2.should.be.calledOnce;
         spy2.getCall(0).args[0].id.should.be.eq("test");
         spy2.getCall(0).args[0].params.param1.should.be.eq("testParam");
-        spy2.getCall(0).args[1].should.be.eq("Error: not working");
+        spy2.getCall(0).args[1].toString().should.include("Error: not working");
     });
     it("Should run multi schedule job using date syntax ", async () => {
         await queue.reset();

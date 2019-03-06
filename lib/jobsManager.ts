@@ -46,7 +46,7 @@ export class JobsManager extends EventDispatcher {
 
     private async _checkForJobs() {
 
-        if(!this._isRunning){
+        if (!this._isRunning) {
             return;
         }
 
@@ -73,7 +73,7 @@ export class JobsManager extends EventDispatcher {
     }
 
     private async _handleJob(params: IJobParams) {
-        if(!this._isRunning){
+        if (!this._isRunning) {
             return;
         }
 
@@ -106,7 +106,7 @@ export class JobsManager extends EventDispatcher {
 
             await this.nack(job);
 
-            this._client.publish(Events.JobFail, job.toJobParam(), e ? e.toString() : "job error");
+            this._client.publish(Events.JobFail, job.toJobParam(), Util.error(e) || "job error");
         } finally {
             this._currentJobsCount--;
         }
@@ -120,6 +120,7 @@ export class JobsManager extends EventDispatcher {
         job.data.lastRun = Date.now();
         job.options.repeat && (job.data.runCount++);
         job.data.errorCount = 0;
+        job.data.status = "success";
 
         if (job.options.repeat && job.data.runCount >= job.options.repeat) {
 
@@ -137,17 +138,19 @@ export class JobsManager extends EventDispatcher {
 
         try {
             job.data.errorCount++;
+            job.data.status = "error";
 
             if (job.data.errorCount <= job.options.retry) {
                 job.setNextRun(Date.now() + (job.data.errorCount * (job.options.backoff || 1000)))
             } else {
+                job.data.errorCount = 0;
                 job.setNextRun(Util.calcNextRun(job.options.schedule));
             }
 
             await job.exec();
 
         } catch (e) {
-            this.fireEvent(Events.Error, e);
+            this.fireEvent(Events.Error, Util.error(e));
         }
     }
 

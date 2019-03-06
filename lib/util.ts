@@ -62,5 +62,24 @@ export class Util {
 
     }
 
+    public static error(err: Error): string {
+        let output = "";
+
+        if (err) {
+
+            if (err instanceof Error) {
+                output = err.stack || err.toString()
+            }
+            else {
+                try {
+                    output = JSON.stringify(err)
+                } catch (e) {
+                }
+            }
+        }
+
+        return output;
+    }
+
 
 }
