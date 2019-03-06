@@ -10,7 +10,8 @@ export interface IJobParams {
 
 export interface IJobData {
     lastRun: number;
-    status: "success" | "error"
+    status?: "success" | "error"
+    err?: string
     runCount: number;
     errorCount: number;
     nextRun: number

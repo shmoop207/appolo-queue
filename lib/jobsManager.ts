@@ -104,7 +104,7 @@ export class JobsManager extends EventDispatcher {
 
         } catch (e) {
 
-            await this.nack(job);
+            await this.nack(job, e);
 
             this._client.publish(Events.JobFail, job.toJobParam(), Util.error(e) || "job error");
         } finally {
@@ -121,6 +121,7 @@ export class JobsManager extends EventDispatcher {
         job.options.repeat && (job.data.runCount++);
         job.data.errorCount = 0;
         job.data.status = "success";
+        job.data.err = "";
 
         if (job.options.repeat && job.data.runCount >= job.options.repeat) {
 
@@ -134,11 +135,12 @@ export class JobsManager extends EventDispatcher {
         }
     }
 
-    public async nack(job: Job): Promise<void> {
+    public async nack(job: Job, err?: Error): Promise<void> {
 
         try {
             job.data.errorCount++;
             job.data.status = "error";
+            job.data.err = Util.error(err);
 
             if (job.data.errorCount <= job.options.retry) {
                 job.setNextRun(Date.now() + (job.data.errorCount * (job.options.backoff || 1000)))
