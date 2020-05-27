@@ -1,10 +1,8 @@
 
 import chai = require("chai");
 import sinon = require("sinon");
-import redis = require("redis");
-import redisMock = require("redis-mock");
 import sinonChai = require("sinon-chai");
-import Q = require("bluebird");
+import {Promises} from "appolo-utils";
 import  moment = require('moment');
 import {SinonFakeTimers} from "sinon";
 import {Job} from "../lib/job";
@@ -32,7 +30,7 @@ describe("Queue", () => {
     beforeEach(async () => {
 
 
-        queue = new Queue({redis: process.env.REDIS, checkInterval: 10});
+        queue = new Queue({redis: process.env.REDIS, checkInterval: 10,queueName:"test-queue"});
 
         await queue.initialize();
 
@@ -62,11 +60,11 @@ describe("Queue", () => {
             .delay(200)
             .exec();
 
-        await Q.delay(50);
+        await Promises.delay(50);
 
         spy.should.be.not.called;
 
-        await Q.delay(200);
+        await Promises.delay(200);
 
         spy.should.be.calledOnce;
 
@@ -77,7 +75,7 @@ describe("Queue", () => {
 
     it("Should run now job ", async () => {
 
-        let spy = sinon.spy(async () => {
+        let spy = sinon.spy(async (...args:any[]) => {
         });
 
         queue.handle("test", spy);
@@ -85,7 +83,7 @@ describe("Queue", () => {
         await queue.create("test", {param1: "testParam"})
             .exec();
 
-        await Q.delay(500);
+        await Promises.delay(500);
 
         spy.should.be.calledOnce;
 
@@ -97,7 +95,7 @@ describe("Queue", () => {
 
     it("Should run schedule job", async () => {
 
-        let spy = sinon.spy(async () => {
+        let spy = sinon.spy(async (...args:any[]) => {
         });
 
         queue.handle("test", spy);
@@ -106,11 +104,11 @@ describe("Queue", () => {
             .schedule("every 1 seconds")
             .exec();
 
-        await Q.delay(300);
+        await Promises.delay(300);
 
         spy.should.be.not.called;
 
-        await Q.delay(3000);
+        await Promises.delay(3000);
 
         spy.should.be.calledTwice;
 
@@ -123,18 +121,18 @@ describe("Queue", () => {
 
         await queue.initialize();
 
-        let spy = sinon.spy(async () => {
+        let spy = sinon.spy(async (...args:any[]) => {
         });
 
         queue.handle("test", spy);
 
         await queue.create("test", {param1: "testParam"}).schedule("1 second from now").exec();
 
-        await Q.delay(300);
+        await Promises.delay(300);
 
         spy.should.be.not.called;
 
-        await Q.delay(1000);
+        await Promises.delay(1000);
 
         spy.should.be.calledOnce;
 
@@ -153,7 +151,7 @@ describe("Queue", () => {
 
         await queue.create("test", {param1: "testParam"}).schedule("* * * * * *").exec();
 
-        await Q.delay(1000);
+        await Promises.delay(1000);
 
         spy.should.be.calledOnce;
 
@@ -165,18 +163,18 @@ describe("Queue", () => {
 
     it("Should run schedule job using milisecond syntax ", async () => {
 
-        let spy = sinon.spy(async () => {
+        let spy = sinon.spy(async (...args:any[]) => {
         });
 
         queue.handle("test", spy);
 
         await queue.create("test", {param1: "testParam"}).delay(1000).exec();
 
-        await Q.delay(300);
+        await Promises.delay(300);
 
         spy.should.be.not.called;
 
-        await Q.delay(1000);
+        await Promises.delay(1000);
 
         spy.should.be.calledOnce;
 
@@ -188,18 +186,18 @@ describe("Queue", () => {
     it("Should run schedule job using date object ", async () => {
 
 
-        let spy = sinon.spy(async () => {
+        let spy = sinon.spy(async (...args:any[]) => {
         });
 
         queue.handle("test", spy);
 
         await queue.create("test", {param1: "testParam"}).delay(new Date(Date.now() + 1000)).exec();
 
-        await Q.delay(300);
+        await Promises.delay(300);
 
         spy.should.be.not.called;
 
-        await Q.delay(1000);
+        await Promises.delay(1000);
 
         spy.should.be.calledOnce;
 
@@ -225,7 +223,7 @@ describe("Queue", () => {
         job.on(Events.JobSuccess, spy2);
 
 
-        await Q.delay(1500);
+        await Promises.delay(1900);
 
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
@@ -254,7 +252,7 @@ describe("Queue", () => {
         job.on(Events.JobSuccess, spy2);
 
 
-        await Q.delay(1500);
+        await Promises.delay(1500);
 
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
@@ -285,7 +283,7 @@ describe("Queue", () => {
         job.on(Events.JobFail, spy2);
 
 
-        await Q.delay(1500);
+        await Promises.delay(1500);
 
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
@@ -318,7 +316,7 @@ describe("Queue", () => {
         await queue.create("test", {param1: "testParam"}).schedule("1 second from now").exec();
         await queue.create("test2", {param1: "testParam2"}).schedule("1 second from now").exec();
 
-        await Q.delay(1300);
+        await Promises.delay(1300);
 
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
@@ -345,7 +343,7 @@ describe("Queue", () => {
         await queue.create("test", {param1: "testParam"}).schedule("1 second from now").exec();
         await queue.create("test2", {param1: "testParam2"}).schedule("1 second from now").exec();
 
-        await Q.delay(300);
+        await Promises.delay(300);
 
         let jobs = await queue.getAllJobs();
 
@@ -371,7 +369,7 @@ describe("Queue", () => {
         await queue.create("test", {param1: "testParam"}).schedule("1 second from now").handler("test").exec();
         await queue.create("test2", {param1: "testParam2"}).schedule("1 second from now").handler("test").exec();
 
-        await Q.delay(1300);
+        await Promises.delay(1300);
 
         spy.should.be.calledTwice;
         spy.getCall(0).args[0].id.should.be.eq("test");
@@ -394,7 +392,7 @@ describe("Queue", () => {
         await queue.create("test", {param1: "testParam"}).schedule("1 second from now").handler(spy).exec();
         await queue.create("test2", {param1: "testParam2"}).schedule("1 second from now").handler(spy).exec();
 
-        await Q.delay(1500);
+        await Promises.delay(1500);
 
         spy.should.be.calledTwice;
         spy.getCall(0).args[0].id.should.be.eq("test");
@@ -414,7 +412,7 @@ describe("Queue", () => {
 
         await queue.create("test", {param1: "testParam"}).delay("1 second from now").exec();
 
-        await Q.delay(1300);
+        await Promises.delay(1300);
 
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
@@ -438,11 +436,11 @@ describe("Queue", () => {
             .delay("1 second from now")
             .exec();
 
-        await Q.delay(200);
+        await Promises.delay(200);
 
         await queue.create("test", {param1: "testParam"}).delay("1 second from now").exec();
 
-        await Q.delay(1500);
+        await Promises.delay(1500);
 
 
         spy.should.be.calledOnce;

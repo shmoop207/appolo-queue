@@ -5,18 +5,18 @@ import {QueueDefaults} from "./defaults";
 import {JobsManager} from "./jobsManager";
 import {Events} from "./events";
 import {Util} from "./util";
-import _ = require("lodash");
+import {Promises, Objects} from "appolo-utils";
 
 export class Queue {
 
-    private _client: Client;
+    private readonly _client: Client;
     private _jobsManager: JobsManager;
 
 
-    constructor(private _options: IOptions) {
+    constructor(private readonly _options: IOptions) {
 
 
-        this._options = _.defaults({}, _options, QueueDefaults);
+        this._options = Objects.defaults({}, _options, QueueDefaults);
 
         this._client = new Client(this._options);
 

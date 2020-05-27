@@ -6,11 +6,12 @@ import {JobDefaults} from "./defaults";
 import {Events} from "./events";
 import {EventDispatcher} from "appolo-event-dispatcher/index";
 import {JobsManager} from "./jobsManager";
-import _ = require("lodash");
+import {Promises, Objects,Functions} from "appolo-utils";
 
 export class Job extends EventDispatcher {
 
     private _id: string;
+    private _isAcked: boolean;
     private _options: IJobOptions;
     private _params: { [index: string]: any } = {};
     private _data: IJobData;
@@ -27,7 +28,7 @@ export class Job extends EventDispatcher {
 
         this._id = id;
         this._isNew = !data;
-        this._options = _.defaults({}, options, JobDefaults);
+        this._options = Objects.defaults({}, options, JobDefaults);
         this._params = params || {};
         this._data = data || {lastRun: 0, runCount: 0, errorCount: 0, nextRun: Date.now()};
         this._client = client;
@@ -54,7 +55,7 @@ export class Job extends EventDispatcher {
 
     public handler(value: JobHandler | string, options?: IHandlerOptions): this {
 
-        if (_.isFunction(value)) {
+        if (Functions.isFunction(value)) {
             this._jobManager.setJobHandler(this.id, value as JobHandler, options)
         } else {
             this._options.handler = value;
@@ -159,9 +160,12 @@ export class Job extends EventDispatcher {
     public async lock(time?: number): Promise<this> {
         time = time || this._options.lockTime;
 
-        this.setNextRun(Date.now() + time);
+        let lockTime = Date.now() + time;
 
-        await this.save();
+        this.setNextRun(lockTime);
+
+        await Promise.all([this.save(), this._client.addRunningJob(this._id, lockTime)]);
+
 
         return this;
     }
@@ -211,6 +215,71 @@ export class Job extends EventDispatcher {
         return this;
     }
 
+    public async ack(result?: any): Promise<void> {
+
+        if (this._isAcked) {
+            return;
+        }
+
+        this._isAcked = true;
+        this.data.lastRun = Date.now();
+        this.options.repeat && (this.data.runCount++);
+        this.data.errorCount = 0;
+        this.data.status = "success";
+        this.data.err = "";
+
+        let promise;
+
+        if (this.options.repeat && this.data.runCount >= this.options.repeat) {
+
+            promise = this.cancel();
+
+        } else {
+
+            this.setNextRun(Util.calcNextRun(this.options.schedule));
+
+            promise = this.exec();
+        }
+
+        await Promise.all([promise, this._client.removeRunningJob(this._id)]);
+
+        this._client.publish(Events.JobSuccess, this.toJobParam(), result);
+
+        this._client.publish(Events.JobComplete, this.toJobParam());
+
+    }
+
+    public async nack(err?: Error): Promise<void> {
+
+        if (this._isAcked) {
+            return;
+        }
+
+        this._isAcked = true;
+
+        try {
+            this.data.errorCount++;
+            this.data.status = "error";
+            this.data.err = Util.error(err);
+
+            if (this.data.errorCount <= this.options.retry) {
+                this.setNextRun(Date.now() + (this.data.errorCount * (this.options.backoff || 1000)))
+            } else {
+                this.data.errorCount = 0;
+                this.setNextRun(Util.calcNextRun(this.options.schedule));
+            }
+
+            await Promise.all([this.exec(), this._client.removeRunningJob(this._id)]);
+
+        } catch (e) {
+            this.fireEvent(Events.Error, Util.error(e));
+        }
+
+        this._client.publish(Events.JobFail, this.toJobParam(), Util.error(err) || "job error");
+        this._client.publish(Events.JobComplete, this.toJobParam());
+
+    }
+
     private async _checkNextTime() {
         if (this._isNew && !this._override) {
             let dbJob = await this._client.getJob(this.id);
@@ -237,7 +306,7 @@ export class Job extends EventDispatcher {
     public destroy() {
 
 
-        if(this._isBindEvents){
+        if (this._isBindEvents) {
             this._client.removeListenersByScope(this);
         }
 

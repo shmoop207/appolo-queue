@@ -1,5 +1,5 @@
 import cronParser = require('cron-parser');
-import _ = require('lodash');
+import {Numbers} from 'appolo-utils';
 import date = require('date.js');
 import {ScheduleType} from "./IOptions";
 
@@ -11,7 +11,7 @@ export class Util {
             return schedule.valueOf();
         }
 
-        if (_.isNumber(schedule)) {
+        if (typeof schedule =="number") {
             return Date.now() + schedule;
         }
 
@@ -40,7 +40,7 @@ export class Util {
             return schedule.valueOf() - Date.now();
         }
 
-        if (_.isNumber(schedule)) {
+        if (typeof schedule =="number") {
             return schedule;
         }
 

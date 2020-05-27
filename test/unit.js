@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const chai = require("chai");
 const sinon = require("sinon");
 const sinonChai = require("sinon-chai");
-const Q = require("bluebird");
+const appolo_utils_1 = require("appolo-utils");
 const moment = require("moment");
 const events_1 = require("../lib/events");
 const index_1 = require("../index");
@@ -16,7 +16,7 @@ describe("Queue", () => {
         throw new Error(`please define process.env.REDIS`);
     }
     beforeEach(async () => {
-        queue = new index_1.Queue({ redis: process.env.REDIS, checkInterval: 10 });
+        queue = new index_1.Queue({ redis: process.env.REDIS, checkInterval: 10, queueName: "test-queue" });
         await queue.initialize();
         await queue.purge();
     });
@@ -34,47 +34,47 @@ describe("Queue", () => {
         await queue.create("test", { param1: "testParam" })
             .delay(200)
             .exec();
-        await Q.delay(50);
+        await appolo_utils_1.Promises.delay(50);
         spy.should.be.not.called;
-        await Q.delay(200);
+        await appolo_utils_1.Promises.delay(200);
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
         spy.getCall(0).args[0].params.param1.should.be.eq("testParam");
     });
     it("Should run now job ", async () => {
-        let spy = sinon.spy(async () => {
+        let spy = sinon.spy(async (...args) => {
         });
         queue.handle("test", spy);
         await queue.create("test", { param1: "testParam" })
             .exec();
-        await Q.delay(500);
+        await appolo_utils_1.Promises.delay(500);
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
         spy.getCall(0).args[0].params.param1.should.be.eq("testParam");
     });
     it("Should run schedule job", async () => {
-        let spy = sinon.spy(async () => {
+        let spy = sinon.spy(async (...args) => {
         });
         queue.handle("test", spy);
         await queue.create("test", { param1: "testParam" })
             .schedule("every 1 seconds")
             .exec();
-        await Q.delay(300);
+        await appolo_utils_1.Promises.delay(300);
         spy.should.be.not.called;
-        await Q.delay(3000);
+        await appolo_utils_1.Promises.delay(3000);
         spy.should.be.calledTwice;
         spy.getCall(0).args[0].id.should.be.eq("test");
         spy.getCall(0).args[0].params.param1.should.be.eq("testParam");
     });
     it("Should run schedule job using date syntax ", async () => {
         await queue.initialize();
-        let spy = sinon.spy(async () => {
+        let spy = sinon.spy(async (...args) => {
         });
         queue.handle("test", spy);
         await queue.create("test", { param1: "testParam" }).schedule("1 second from now").exec();
-        await Q.delay(300);
+        await appolo_utils_1.Promises.delay(300);
         spy.should.be.not.called;
-        await Q.delay(1000);
+        await appolo_utils_1.Promises.delay(1000);
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
         spy.getCall(0).args[0].params.param1.should.be.eq("testParam");
@@ -83,31 +83,31 @@ describe("Queue", () => {
         let spy = sinon.spy();
         queue.handle("test", spy);
         await queue.create("test", { param1: "testParam" }).schedule("* * * * * *").exec();
-        await Q.delay(1000);
+        await appolo_utils_1.Promises.delay(1000);
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
         spy.getCall(0).args[0].params.param1.should.be.eq("testParam");
     });
     it("Should run schedule job using milisecond syntax ", async () => {
-        let spy = sinon.spy(async () => {
+        let spy = sinon.spy(async (...args) => {
         });
         queue.handle("test", spy);
         await queue.create("test", { param1: "testParam" }).delay(1000).exec();
-        await Q.delay(300);
+        await appolo_utils_1.Promises.delay(300);
         spy.should.be.not.called;
-        await Q.delay(1000);
+        await appolo_utils_1.Promises.delay(1000);
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
         spy.getCall(0).args[0].params.param1.should.be.eq("testParam");
     });
     it("Should run schedule job using date object ", async () => {
-        let spy = sinon.spy(async () => {
+        let spy = sinon.spy(async (...args) => {
         });
         queue.handle("test", spy);
         await queue.create("test", { param1: "testParam" }).delay(new Date(Date.now() + 1000)).exec();
-        await Q.delay(300);
+        await appolo_utils_1.Promises.delay(300);
         spy.should.be.not.called;
-        await Q.delay(1000);
+        await appolo_utils_1.Promises.delay(1000);
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
         spy.getCall(0).args[0].params.param1.should.be.eq("testParam");
@@ -120,7 +120,7 @@ describe("Queue", () => {
         let job = await queue.create("test", { param1: "testParam" }).schedule("1 second from now").exec();
         queue.on(events_1.Events.JobSuccess, spy);
         job.on(events_1.Events.JobSuccess, spy2);
-        await Q.delay(1500);
+        await appolo_utils_1.Promises.delay(1900);
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
         spy.getCall(0).args[0].params.param1.should.be.eq("testParam");
@@ -137,7 +137,7 @@ describe("Queue", () => {
         let job = await queue.create("test", { param1: "testParam" }).schedule("1 second from now").exec();
         queue.on(events_1.Events.JobSuccess, spy);
         job.on(events_1.Events.JobSuccess, spy2);
-        await Q.delay(1500);
+        await appolo_utils_1.Promises.delay(1500);
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
         spy.getCall(0).args[0].params.param1.should.be.eq("testParam");
@@ -156,7 +156,7 @@ describe("Queue", () => {
         let job = await queue.create("test", { param1: "testParam" }).schedule("1 second from now").exec();
         queue.on(events_1.Events.JobFail, spy);
         job.on(events_1.Events.JobFail, spy2);
-        await Q.delay(1500);
+        await appolo_utils_1.Promises.delay(1500);
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
         spy.getCall(0).args[0].params.param1.should.be.eq("testParam");
@@ -176,7 +176,7 @@ describe("Queue", () => {
         queue.handle("test2", spy2);
         await queue.create("test", { param1: "testParam" }).schedule("1 second from now").exec();
         await queue.create("test2", { param1: "testParam2" }).schedule("1 second from now").exec();
-        await Q.delay(1300);
+        await appolo_utils_1.Promises.delay(1300);
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
         spy.getCall(0).args[0].params.param1.should.be.eq("testParam");
@@ -192,7 +192,7 @@ describe("Queue", () => {
         queue.handle("test2", spy2);
         await queue.create("test", { param1: "testParam" }).schedule("1 second from now").exec();
         await queue.create("test2", { param1: "testParam2" }).schedule("1 second from now").exec();
-        await Q.delay(300);
+        await appolo_utils_1.Promises.delay(300);
         let jobs = await queue.getAllJobs();
         jobs[0].id.should.be.eq("test");
         jobs[0].params.param1.should.be.eq("testParam");
@@ -205,7 +205,7 @@ describe("Queue", () => {
         queue.handle("test", spy);
         await queue.create("test", { param1: "testParam" }).schedule("1 second from now").handler("test").exec();
         await queue.create("test2", { param1: "testParam2" }).schedule("1 second from now").handler("test").exec();
-        await Q.delay(1300);
+        await appolo_utils_1.Promises.delay(1300);
         spy.should.be.calledTwice;
         spy.getCall(0).args[0].id.should.be.eq("test");
         spy.getCall(0).args[0].params.param1.should.be.eq("testParam");
@@ -217,7 +217,7 @@ describe("Queue", () => {
         let spy = sinon.spy();
         await queue.create("test", { param1: "testParam" }).schedule("1 second from now").handler(spy).exec();
         await queue.create("test2", { param1: "testParam2" }).schedule("1 second from now").handler(spy).exec();
-        await Q.delay(1500);
+        await appolo_utils_1.Promises.delay(1500);
         spy.should.be.calledTwice;
         spy.getCall(0).args[0].id.should.be.eq("test");
         spy.getCall(0).args[0].params.param1.should.be.eq("testParam");
@@ -228,7 +228,7 @@ describe("Queue", () => {
         let spy = sinon.spy();
         queue.handle("test", spy);
         await queue.create("test", { param1: "testParam" }).delay("1 second from now").exec();
-        await Q.delay(1300);
+        await appolo_utils_1.Promises.delay(1300);
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
         spy.getCall(0).args[0].params.param1.should.be.eq("testParam");
@@ -241,9 +241,9 @@ describe("Queue", () => {
         await queue.create("test", { param1: "testParam" })
             .delay("1 second from now")
             .exec();
-        await Q.delay(200);
+        await appolo_utils_1.Promises.delay(200);
         await queue.create("test", { param1: "testParam" }).delay("1 second from now").exec();
-        await Q.delay(1500);
+        await appolo_utils_1.Promises.delay(1500);
         spy.should.be.calledOnce;
         spy.getCall(0).args[0].id.should.be.eq("test");
         spy.getCall(0).args[0].params.param1.should.be.eq("testParam");

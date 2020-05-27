@@ -5,6 +5,7 @@ export interface IOptions {
     maxConcurrency?: number
     lockTime?: number
     autoStart?: boolean;
+    autoAck?: boolean;
 
 }
 

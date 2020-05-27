@@ -4,11 +4,9 @@ import {Client} from "./client";
 import {IHandlerOptions, IOptions} from "./IOptions";
 import {EventDispatcher} from "appolo-event-dispatcher";
 import {Events} from "./events";
-import {Util} from "./util";
+import {Promises, Objects} from "appolo-utils";
 import {HandlerDefaults} from "./defaults";
 import {setInterval} from "timers";
-import Q = require("bluebird");
-import _ = require("lodash");
 import Timer = NodeJS.Timer;
 
 export class JobsManager extends EventDispatcher {
@@ -16,8 +14,6 @@ export class JobsManager extends EventDispatcher {
     private _interval: Timer;
     private _handlers: Map<string, { options: IHandlerOptions, handler: (job: Job) => Promise<any> }>;
     private _isRunning: boolean;
-
-    private _currentJobsCount = 0;
 
     constructor(private _options: IOptions, private _client: Client) {
         super();
@@ -50,7 +46,9 @@ export class JobsManager extends EventDispatcher {
             return;
         }
 
-        let maxJobs = this._options.maxConcurrency - this._currentJobsCount;
+        let runningJobs = await this._client.countRunningJobs();
+
+        let maxJobs = this._options.maxConcurrency - runningJobs;
 
         if (maxJobs <= 0) {
             return;
@@ -63,7 +61,7 @@ export class JobsManager extends EventDispatcher {
                 return;
             }
 
-            await Q.map(jobsParams, params => this._handleJob(params), {concurrency: maxJobs})
+            await Promises.map(jobsParams, params => this._handleJob(params), {concurrency: maxJobs})
 
         } catch (e) {
             this.fireEvent(Events.Error, e);
@@ -76,8 +74,6 @@ export class JobsManager extends EventDispatcher {
         if (!this._isRunning) {
             return;
         }
-
-        this._currentJobsCount++;
 
         let job = this.createJob(params);
 
@@ -98,63 +94,17 @@ export class JobsManager extends EventDispatcher {
 
             let result = await handler.handler(job);
 
-            await this.ack(job);
-
-            this._client.publish(Events.JobSuccess, job.toJobParam(), result);
+            if (this._options.autoAck) {
+                await job.ack(result);
+            }
 
         } catch (e) {
-
-            await this.nack(job, e);
-
-            this._client.publish(Events.JobFail, job.toJobParam(), Util.error(e) || "job error");
-        } finally {
-            this._currentJobsCount--;
+            await job.nack(e);
         }
 
         job.destroy();
-
-        this._client.publish(Events.JobComplete, job.toJobParam());
     }
 
-    public async ack(job: Job): Promise<void> {
-        job.data.lastRun = Date.now();
-        job.options.repeat && (job.data.runCount++);
-        job.data.errorCount = 0;
-        job.data.status = "success";
-        job.data.err = "";
-
-        if (job.options.repeat && job.data.runCount >= job.options.repeat) {
-
-            await job.cancel();
-
-        } else {
-
-            job.setNextRun(Util.calcNextRun(job.options.schedule));
-
-            await job.exec();
-        }
-    }
-
-    public async nack(job: Job, err?: Error): Promise<void> {
-
-        try {
-            job.data.errorCount++;
-            job.data.status = "error";
-            job.data.err = Util.error(err);
-
-            if (job.data.errorCount <= job.options.retry) {
-                job.setNextRun(Date.now() + (job.data.errorCount * (job.options.backoff || 1000)))
-            } else {
-                job.data.errorCount = 0;
-                job.setNextRun(Util.calcNextRun(job.options.schedule));
-            }
-
-            await job.exec();
-
-        } catch (e) {
-            this.fireEvent(Events.Error, Util.error(e));
-        }
-    }
 
     private _onClientMessage(data: { eventName: string, job: IJobParams, result: any }) {
         let job = this.createJob(data.job);
@@ -163,7 +113,7 @@ export class JobsManager extends EventDispatcher {
 
     public setJobHandler(id: string, handler: (job: Job) => Promise<any>, options: IHandlerOptions) {
 
-        options = _.defaults({}, options, HandlerDefaults);
+        options = Objects.defaults({}, options, HandlerDefaults);
 
         this._handlers.set(id, {handler, options})
 
@@ -189,7 +139,7 @@ export class JobsManager extends EventDispatcher {
     public async getAllJobs(): Promise<Job[]> {
         let jobParams = await this._client.getAllJobs();
 
-        return _.map(jobParams, item => this.createJob(item));
+        return (jobParams || []).map(item => this.createJob(item));
     }
 
     public reset() {

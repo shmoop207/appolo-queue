@@ -5,7 +5,8 @@ export let QueueDefaults = <Partial<IOptions>>{
     lockTime: 1000 * 60,
     queueName: 'appolo-queue',
     maxConcurrency: 1,
-    autoStart:true
+    autoStart:true,
+    autoAck:true
 
 
 };
