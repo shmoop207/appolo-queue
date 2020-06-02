@@ -6,7 +6,7 @@ import {JobDefaults} from "./defaults";
 import {Events} from "./events";
 import {EventDispatcher} from "appolo-event-dispatcher/index";
 import {JobsManager} from "./jobsManager";
-import {Promises, Objects,Functions} from "appolo-utils";
+import {Promises, Objects, Functions} from "appolo-utils";
 
 export class Job extends EventDispatcher {
 
@@ -160,11 +160,9 @@ export class Job extends EventDispatcher {
     public async lock(time?: number): Promise<this> {
         time = time || this._options.lockTime;
 
-        let lockTime = Date.now() + time;
+        this.setNextRun(Date.now() + time);
 
-        this.setNextRun(lockTime);
-
-        await Promise.all([this.save(), this._client.addRunningJob(this._id, lockTime)]);
+        await Promise.all([this.save(), this._client.addRunningJob(this._id, time)]);
 
 
         return this;
