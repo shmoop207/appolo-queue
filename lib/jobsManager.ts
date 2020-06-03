@@ -99,12 +99,7 @@ export class JobsManager extends EventDispatcher {
                 await job.lock(handler.options.lockTime || job.options.lockTime);
             }
 
-            let [err, result] = await Promises.to<any, Error>(handler.handler(job));
-
-            if (!err) {
-                await job.nack(err);
-                return
-            }
+            let result = await handler.handler(job);
 
             if (this._options.autoAck) {
                 await job.ack(result);
