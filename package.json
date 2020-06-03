@@ -22,7 +22,7 @@
     "test": "mocha test --timeout 10000 --exit"
   },
   "main": "./index.js",
-  "version": "7.1.1",
+  "version": "7.1.2",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -32,7 +32,7 @@
   "readmeFilename": "README.md",
   "dependencies": {
     "appolo-event-dispatcher": "^7.0.1",
-    "appolo-utils": "0.0.53",
+    "appolo-utils": "^0.0.53",
     "cron-parser": "^2.15.0",
     "date.js": "^0.3.3",
     "ioredis": "^4.17.1"

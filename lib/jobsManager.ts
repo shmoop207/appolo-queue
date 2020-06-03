@@ -14,6 +14,7 @@ export class JobsManager extends EventDispatcher {
     private _interval: Timer;
     private _handlers: Map<string, { options: IHandlerOptions, handler: (job: Job) => Promise<any> }>;
     private _isRunning: boolean;
+    private _jobsRunning: number = 0
 
     constructor(private _options: IOptions, private _client: Client) {
         super();
@@ -46,9 +47,13 @@ export class JobsManager extends EventDispatcher {
             return;
         }
 
-        let runningJobs = await this._client.countRunningJobs();
+        let allRunningJobs = await this._client.countRunningJobs();
 
-        let maxJobs = this._options.maxConcurrency - runningJobs;
+        let allMaxJobs = Math.max(this._options.maxConcurrency - allRunningJobs, 0);
+
+        let nodeMaxJobs = Math.max(this._options.maxConcurrencyPerNode - this._jobsRunning, 0);
+
+        let maxJobs = Math.min(nodeMaxJobs, allMaxJobs);
 
         if (maxJobs <= 0) {
             return;
@@ -75,6 +80,8 @@ export class JobsManager extends EventDispatcher {
             return;
         }
 
+        this._jobsRunning++;
+
         let job = this.createJob(params);
 
 
@@ -92,16 +99,22 @@ export class JobsManager extends EventDispatcher {
                 await job.lock(handler.options.lockTime || job.options.lockTime);
             }
 
-            let result = await handler.handler(job);
+            let [err, result] = await Promises.to<any, Error>(handler.handler(job));
+
+            if (!err) {
+                await job.nack(err);
+                return
+            }
 
             if (this._options.autoAck) {
                 await job.ack(result);
             }
 
         } catch (e) {
-            await job.nack(e);
+            await Promises.to(job.nack(e));
         }
 
+        this._jobsRunning--;
         job.destroy();
     }
 

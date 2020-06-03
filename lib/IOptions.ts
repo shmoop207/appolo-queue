@@ -3,6 +3,7 @@ export interface IOptions {
     queueName?: string
     checkInterval?: number
     maxConcurrency?: number
+    maxConcurrencyPerNode?: number
     lockTime?: number
     autoStart?: boolean;
     autoAck?: boolean;
