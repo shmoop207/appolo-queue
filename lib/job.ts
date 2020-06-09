@@ -10,11 +10,11 @@ import {Promises, Objects, Functions} from "appolo-utils";
 
 export class Job extends EventDispatcher {
 
-    private _id: string;
+    private readonly _id: string;
     private _isAcked: boolean;
-    private _options: IJobOptions;
-    private _params: { [index: string]: any } = {};
-    private _data: IJobData;
+    private readonly _options: IJobOptions;
+    private readonly _params: { [index: string]: any } = {};
+    private readonly _data: IJobData;
     private _client: Client;
     private _jobManager: JobsManager;
     private _isNew: boolean;
@@ -162,7 +162,7 @@ export class Job extends EventDispatcher {
 
         this.setNextRun(Date.now() + time);
 
-        await Promise.all([this.save(), this._client.addRunningJob(this._id, time)]);
+        await Promise.all([this.exec(), this._client.addRunningJob(this._id, time)]);
 
 
         return this;
@@ -199,7 +199,7 @@ export class Job extends EventDispatcher {
 
     public async exec(): Promise<this> {
 
-        await this._checkNextTime();
+        await this._validateJobData();
 
         await this.save();
 
@@ -278,18 +278,34 @@ export class Job extends EventDispatcher {
 
     }
 
-    private async _checkNextTime() {
-        if (this._isNew && !this._override) {
-            let dbJob = await this._client.getJob(this.id);
-
-            if (dbJob && dbJob.options.schedule == this._options.schedule) {
-                this._data.nextRun = dbJob.data.nextRun
-            }
-        }
-
+    private async _validateJobData() {
         if (this._data.nextRun - Date.now() < 0) {
             this._data.nextRun = Date.now();
         }
+
+        if (!this._isNew || this._override) {
+            return
+        }
+
+        let dbJob = await this._client.getJob(this.id);
+
+        if (!dbJob) {
+            return
+        }
+
+        this._isNew = false;
+
+        this._data.err = dbJob.data.err
+        this._data.errorCount = dbJob.data.errorCount
+        this._data.lastRun = dbJob.data.lastRun;
+        this._data.status = dbJob.data.status;
+        this._data.runCount = dbJob.data.runCount;
+
+        if (dbJob.options.schedule == this._options.schedule) {
+            this._data.nextRun = dbJob.data.nextRun
+        }
+
+
     }
 
     public toJobParam(): IJobParams {
