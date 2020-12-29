@@ -35,7 +35,7 @@
     "appolo-utils": "^0.0.53",
     "cron-parser": "^2.15.0",
     "date.js": "^0.3.3",
-    "ioredis": "^4.17.1"
+    "ioredis": "^4.19.2"
   },
   "devDependencies": {
     "@types/ioredis": "^4.16.2",
