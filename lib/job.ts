@@ -4,9 +4,9 @@ import {IJobData, IJobParams, JobHandler} from "./IJob";
 import {Client} from "./client";
 import {JobDefaults} from "./defaults";
 import {Events} from "./events";
-import {EventDispatcher} from "appolo-event-dispatcher/index";
+import {EventDispatcher} from "@appolo/events";
 import {JobsManager} from "./jobsManager";
-import {Promises, Objects, Functions} from "appolo-utils";
+import {Promises, Objects, Functions} from "@appolo/utils";
 
 export class Job extends EventDispatcher {
 

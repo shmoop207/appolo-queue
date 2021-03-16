@@ -2,13 +2,14 @@
 import chai = require("chai");
 import sinon = require("sinon");
 import sinonChai = require("sinon-chai");
-import {Promises} from "appolo-utils";
+import {Promises} from "@appolo/utils";
 import  moment = require('moment');
 import {SinonFakeTimers} from "sinon";
 import {Job} from "../lib/job";
 import {Events} from "../lib/events";
 import {Queue} from "../index"
 import {Util} from "../lib/util";
+import {Arrays} from "@appolo/utils";
 
 
 
@@ -346,6 +347,8 @@ describe("Queue", () => {
         await Promises.delay(300);
 
         let jobs = await queue.getAllJobs();
+
+        jobs = Arrays.sortBy(jobs,job=>job.id);
 
         jobs[0].id.should.be.eq("test");
         jobs[0].params.param1.should.be.eq("testParam");

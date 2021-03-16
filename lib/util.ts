@@ -1,5 +1,5 @@
 import cronParser = require('cron-parser');
-import {Numbers} from 'appolo-utils';
+import {Numbers} from '@appolo/utils';
 import date = require('date.js');
 import {ScheduleType} from "./IOptions";
 

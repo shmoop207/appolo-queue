@@ -5,7 +5,7 @@ import {QueueDefaults} from "./defaults";
 import {JobsManager} from "./jobsManager";
 import {Events} from "./events";
 import {Util} from "./util";
-import {Promises, Objects} from "appolo-utils";
+import {Promises, Objects} from "@appolo/utils";
 
 export class Queue {
 

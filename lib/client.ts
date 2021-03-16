@@ -4,7 +4,7 @@ import util = require("util");
 import Redis = require("ioredis");
 import {IOptions} from "./IOptions";
 import {IJobParams} from "./IJob";
-import {EventDispatcher} from "appolo-event-dispatcher";
+import {EventDispatcher} from "@appolo/events";
 import {Events} from "./events";
 
 
