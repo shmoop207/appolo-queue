@@ -32,7 +32,7 @@
   "readmeFilename": "README.md",
   "dependencies": {
     "@appolo/events": "^8.0.2",
-    "@appolo/utils": "^8.0.16",
+    "@appolo/utils": "^8.0.17",
     "cron-parser": "^3.3.0",
     "date.js": "^0.3.3",
     "ioredis": "^4.24.2"
