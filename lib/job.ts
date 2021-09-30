@@ -260,7 +260,7 @@ export class Job extends EventDispatcher {
             this.data.status = "error";
             this.data.err = Util.error(err);
 
-            if (this.data.errorCount <= this.options.retry) {
+            if (this.data.errorCount < this.options.retry) {
                 this.setNextRun(Date.now() + (this.data.errorCount * (this.options.backoff || 1000)))
             } else {
                 this.data.errorCount = 0;
