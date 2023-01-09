@@ -22,7 +22,7 @@
     "test": "mocha test --timeout 10000 --exit"
   },
   "main": "./index.js",
-  "version": "8.0.1",
+  "version": "8.0.2",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -33,22 +33,22 @@
   "dependencies": {
     "@appolo/events": "^8.0.2",
     "@appolo/utils": "^8.0.16",
-    "cron-parser": "^3.3.0",
+    "cron-parser": "^4.7.0",
     "date.js": "^0.3.3",
-    "ioredis": "^4.24.2"
+    "ioredis": "^5.2.4",
+    "tslib": "^2.4.1"
   },
   "devDependencies": {
-    "@types/chai": "^4.2.15",
-    "@types/ioredis": "^4.22.0",
-    "@types/mocha": "^8.2.1",
-    "@types/node": "^14.14.35",
-    "@types/sinon": "^9.0.11",
-    "@types/sinon-chai": "^3.2.5",
-    "chai": "^4.3.4",
-    "mocha": "^8.3.2",
-    "moment": "^2.29.1",
-    "sinon": "^9.2.4",
-    "sinon-chai": "^3.5.0",
-    "typescript": "^4.2.3"
+    "@types/chai": "^4.3.4",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^18.11.18",
+    "@types/sinon": "^10.0.13",
+    "@types/sinon-chai": "^3.2.9",
+    "chai": "^4.3.7",
+    "mocha": "^10.2.0",
+    "moment": "^2.29.4",
+    "sinon": "^15.0.1",
+    "sinon-chai": "^3.7.0",
+    "typescript": "^4.9.4"
   }
 }

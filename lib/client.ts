@@ -1,7 +1,7 @@
 import fs = require("fs");
 import path = require("path");
 import util = require("util");
-import Redis = require("ioredis");
+import {default as Redis,RedisOptions} from 'ioredis'
 import {IOptions} from "./IOptions";
 import {IJobParams} from "./IJob";
 import {EventDispatcher} from "@appolo/events";
@@ -10,8 +10,8 @@ import {Events} from "./events";
 
 export class Client extends EventDispatcher {
 
-    private _client: Redis.Redis;
-    private _sub: Redis.Redis;
+    private _client: Redis;
+    private _sub: Redis;
     private _isDestroyed = false;
 
     constructor(private _options: IOptions) {
@@ -33,7 +33,17 @@ export class Client extends EventDispatcher {
     public async connect(): Promise<void> {
 
 
-        let params = {enableReadyCheck: true, lazyConnect: true, keepAlive: 1000};
+        let params:RedisOptions = {enableReadyCheck: true, lazyConnect: true, keepAlive: 1000} as any;
+
+        let conn = new URL(this._options.redis);
+        if (conn.protocol == "rediss:") {
+            (params as any).tls = true;
+        }
+
+        params.host = conn.hostname;
+        params.port = parseInt(conn.port);
+        params.password = conn.password;
+
 
         this._client = new Redis(this._options.redis, params);
         this._sub = new Redis(this._options.redis, params);
