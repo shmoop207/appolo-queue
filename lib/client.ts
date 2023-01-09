@@ -45,8 +45,8 @@ export class Client extends EventDispatcher {
         params.password = conn.password;
 
 
-        this._client = new Redis(this._options.redis, params);
-        this._sub = new Redis(this._options.redis, params);
+        this._client = new Redis( params);
+        this._sub = new Redis( params);
 
         await Promise.all([this._client.connect(), this._sub.connect()]);
 
